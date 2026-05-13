@@ -248,7 +248,7 @@ async function insertDiaryPhoto(inputElement) {
 
         try {
             const token = localStorage.getItem('accessToken');
-            const response = await fetch('http://52.79.241.23:3000/common/upload', {
+            const response = await fetch('https://voda-backend.p-e.kr/common/upload', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
