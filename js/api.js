@@ -1,6 +1,6 @@
 // js/api.js
 
-const API_BASE_URL = 'http://52.79.241.23:3000';
+const API_BASE_URL = 'https://voda-backend.p-e.kr';
 
 async function apiFetch(endpoint, options = {}) {
 
