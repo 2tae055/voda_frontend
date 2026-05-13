@@ -83,11 +83,16 @@ async function deleteTodo(todoId) {
     }
 }
 
-async function toggleTodoStatus(todoId, status) {
+async function toggleTodoStatus(todoId) {
     try {
         const response = await apiFetch(`/todo/${todoId}/status`, {
             method: 'PATCH'
         });
+
+        if (!response.success) {
+            alert("상태 변경에 실패했습니다.");
+        }
+
     } catch (error) {
         console.error("상태 변경 실패:", error);
         alert("상태 변경에 실패했습니다.");
