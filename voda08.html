@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 일기장 보다</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <button id="ai-polish-tooltip" onclick="polishSelectedText()"><span class="material-symbols-rounded">auto_awesome</span> AI 교정</button>
+
+        <div id="custom-modal-overlay">
+            <div class="custom-modal-box">
+                <div id="custom-modal-text" class="modal-text">메시지</div>
+                <div id="custom-modal-btns" class="modal-btn-group">
+                    <button class="modal-btn modal-btn-no" onclick="closeCustomModal()">아니오</button>
+                    <button class="modal-btn modal-btn-yes" id="custom-modal-yes-btn">예</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="splash-screen">
+            <img id="logo-image" src="boda11.png" alt="보다 로고">
+            <div class="splash-text"></div>
+            <div class="login-container">
+                <button class="login-btn btn-kakao" onclick="handleLogin(this)">
+                    <img src="kakao_logo.png" alt="K" class="kakao-logo-img"> 카카오로 시작하기
+                </button>
+                <button class="login-btn btn-email" onclick="openEmailLogin()">
+                    <span class="material-symbols-rounded email-btn-icon">mail</span> 이메일로 시작하기
+                </button>
+            </div>
+        </div>
+
+        <div id="email-login-screen">
+            <div style="width: 100%; display: flex; align-items: center; padding: 20px 24px; box-sizing: border-box; flex-shrink: 0;">
+                <button class="back-btn" onclick="closeEmailLogin()"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-dark); margin-left: 10px;" id="email-screen-title">이메일로 로그인</div>
+            </div>
+
+            <div class="email-form-wrapper" id="login-form-wrapper">
+                <div style="font-size: 24px; font-weight: 800; color: var(--text-dark); margin-bottom: 10px;">다시 만나서 반가워요!</div>
+                <input type="email" placeholder="이메일">
+                <input type="password" placeholder="비밀번호">
+                <button class="login-btn btn-signup" onclick="submitEmailLogin(this)">로그인하기</button>
+                
+                <div class="toggle-form-text">
+                    계정이 없으신가요? <span class="toggle-link" onclick="toggleEmailForm('signup')">회원가입</span>
+                </div>
+            </div>
+            
+        <div class="email-form-wrapper" id="signup-form-wrapper" style="display: none;">
+            <div style="font-size: 24px; font-weight: 800; color: var(--text-dark); margin-bottom: 10px;">환영합니다!<br>정보를 입력해주세요.</div>
+            <input type="email" id="signup-email" placeholder="이메일">
+            <input type="password" id="signup-password" placeholder="비밀번호">
+    
+            <input type="text" id="signup-name" placeholder="실명(이름)">
+            <input type="text" id="signup-nickname" placeholder="닉네임">
+    
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                 <div style="font-size: 13px; font-weight: 600; color: var(--text-gray); padding-left: 4px;">생년월일</div>
+                 <input type="date" id="signup-birthdate" style="width: 100%; box-sizing: border-box;">
+            </div>
+    
+            <div class="gender-group">
+                   <label><input type="radio" name="loginGender" value="MALE" style="display:none;"> <div class="gender-label">남성</div></label>
+                   <label><input type="radio" name="loginGender" value="FEMALE" style="display:none;"> <div class="gender-label">여성</div></label>
+                   <label><input type="radio" name="loginGender" value="OTHER" style="display:none;"> <div class="gender-label">기타</div></label>
+            </div>
+            <button class="login-btn btn-signup" onclick="submitSignup(this)">가입 및 로그인하기</button>
+    
+            <div class="toggle-form-text">
+                   이미 계정이 있으신가요? <span class="toggle-link" onclick="toggleEmailForm('login')">로그인</span>
+            </div>
+        </div>
+        </div>
+
+        <div class="views-wrapper">
+            <div id="tab-container">
+                
+                <div class="tab-page">
+                    <header>
+                        <div class="logo">보다</div>
+                        <div class="bell-wrapper" onclick="openSubPage('notifications')">
+                            <span class="material-symbols-rounded bell-icon">notifications</span>
+                            <span class="badge-dot" id="noti-badge"></span>
+                        </div>
+                    </header>
+                    
+                    <div id="default-record-view">
+                        <div class="visual-blob"><img src="boda12.png" alt="연속n일" class="blob-image"></div>
+                        
+                        <div class="streak-wrapper">
+                            <div class="streak-top">
+                                <span class="streak-num" id="streak-num">
+    0
+</span>
+                            </div>
+                            <div class="streak-bottom">일 연속 작성</div>
+                        </div>
+
+                        <div class="greeting">
+                            <h1>안녕하세요, 이태경님!</h1>
+                            <p>오늘의 이야기를 들려주세요</p>
+                        </div>
+                        <div class="swiper mySwiper">
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide"><button class="btn btn-call" onclick="openInRecordTab('call')"><span class="material-symbols-rounded">call</span></button></div>
+                                <div class="swiper-slide"><button class="btn btn-chat" onclick="openInRecordTab('chat')"><span class="material-symbols-rounded">chat_bubble</span></button></div>
+                                <div class="swiper-slide"><button class="btn btn-mic" onclick="openInRecordTab('mic')"><span class="material-symbols-rounded">mic</span></button></div>
+                                <div class="swiper-slide"><button class="btn btn-auto" onclick="triggerAutoDiary()"><span class="material-symbols-rounded">auto_awesome</span></button></div>
+                                <div class="swiper-slide"><button class="btn btn-edit" onclick="openInRecordTab('diary')"><span class="material-symbols-rounded">edit</span></button></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="call-record-view" class="record-view-container">
+                        <div class="call-header">
+                            <div class="call-status-wrapper"><div class="pulse-dot"></div><span id="call-timer">00:00</span></div>
+                            <button class="btn-hangup" onclick="triggerEndSessionFlow('call')"><span class="material-symbols-rounded">call_end</span></button>
+                        </div>
+                        <div id="call-messages" class="messages-area"></div>
+                        <div class="call-mic-status">
+                            <span class="material-symbols-rounded call-mic-icon">mic</span>
+                            <span id="call-mic-text">AI 연결 중...</span>
+                        </div>
+                    </div>
+
+                    <div id="mic-record-view" class="record-view-container">
+                        <div class="top-action-header">
+                            <div class="top-action-title"><span class="material-symbols-rounded" style="color:var(--primary-orange); font-size: 20px;">mic</span>음성 일기 기록 중</div>
+                            <button class="btn-finish-action" onclick="triggerEndSessionFlow('mic')">기록 끝내기</button>
+                        </div>
+                        <div id="mic-messages" class="messages-area">
+                            <div class="chat-bubble bubble-ai">오늘 하루 어떤 일이 있었나요? 편하게 말씀해주세요. 🎙️</div>
+                        </div>
+                        <div class="call-mic-status" style="border-radius: 20px 20px 0 0; box-shadow: 0 -4px 15px rgba(0,0,0,0.02);">
+                            <span class="material-symbols-rounded call-mic-icon" style="color:#4CAF50;">graphic_eq</span>
+                            <span id="mic-status-text">듣고 있어요...</span>
+                        </div>
+                    </div>
+
+                    <div id="chat-record-view" class="record-view-container">
+                        <div class="top-action-header">
+                            <div class="top-action-title"><span class="material-symbols-rounded" style="color:var(--primary-orange); font-size: 20px;">chat_bubble</span>AI 대화 기록 중</div>
+                            <button class="btn-finish-action" onclick="triggerEndSessionFlow('chat')">종료</button>
+                        </div>
+                        <div id="chat-messages" class="messages-area">
+                            <div class="chat-bubble bubble-ai">안녕하세요! 무엇이든 편하게 이야기해주세요. 오늘 하루는 어땠나요? 😊</div>
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" id="chat-input" class="chat-input" placeholder="메시지를 입력하세요..." onkeypress="handleEnter(event)">
+                            <button class="send-btn" onclick="sendMessage()"><span class="material-symbols-rounded">send</span></button>
+                        </div>
+                    </div>
+
+                    <div id="diary-record-view">
+                        <div class="diary-header-box">
+                            <div id="diary-date-header">2026-03-22</div>
+                            <label class="diary-photo-btn">
+                                <input type="file" id="diary-photo-input" accept="image/*" style="display:none;" onchange="insertDiaryPhoto(this)">
+                                <span class="material-symbols-rounded">image</span> 사진 추가
+                            </label>
+                        </div>
+                        <input type="text" class="diary-title-input" id="diary-title-input" placeholder="일기 제목을 적어주세요">
+                        
+                        <div id="diary-input" contenteditable="true" data-placeholder="오늘 하루는 어땠나요? 일기장 글씨를 드래그하면 AI가 예쁘게 다듬어줘요! 😊"></div>
+                        <button class="diary-submit-btn" onclick="finishDiary()">작성 완료</button>
+                    </div>
+                </div>
+
+                <div class="tab-page">
+                    <div id="diary-main-view" style="display:flex; flex-direction:column; flex:1;">
+                        <header>
+                            <div class="logo">다이어리</div>
+                            <span class="material-symbols-rounded bell-icon" onclick="openInDiaryTab('search')">search</span>
+                        </header>
+                        <div class="calendar-container">
+                            <div class="calendar-header">
+                                <h2 id="calendar-month-title">2026년 3월</h2>
+                                <div class="calendar-nav">
+                                    <button id="prev-month"><span class="material-symbols-rounded">chevron_left</span></button>
+                                    <div id="calendar-nav-title" class="calendar-month">2026년 3월</div>
+                                    <button id="next-month"><span class="material-symbols-rounded">chevron_right</span></button>
+                                </div>
+                            </div>
+                            <div class="calendar-grid" id="calendar-grid">
+                                <div class="calendar-day-name">일</div><div class="calendar-day-name">월</div><div class="calendar-day-name">화</div><div class="calendar-day-name">수</div><div class="calendar-day-name">목</div><div class="calendar-day-name">금</div><div class="calendar-day-name">토</div>
+                            </div>
+                        </div>
+                        <div class="summary-container">
+                            <div class="summary-empty" id="summary-empty-text">날짜를 선택하면 기록을 볼 수 있어요.</div>
+                            <div class="summary-card" id="summary-card">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div class="summary-date" id="summary-card-date">3월 27일 금요일</div>
+                                    <span class="material-symbols-rounded" style="font-size:18px; color:var(--text-gray);">chevron_right</span>
+                                </div>
+                                <div class="summary-content" id="summary-card-content">배고파서 소금빵을 먹은 날 🥐</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="diary-search-view" style="display:none; flex-direction:column; flex:1; background-color:var(--bg-color);">
+                        <div class="sub-header">
+                            <button class="back-btn" onclick="openInDiaryTab('main')"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
+                            <div class="sub-title">기록 검색</div>
+                        </div>
+                        <div style="padding: 20px;">
+                            <input type="text" class="search-input-box" placeholder="키워드를 입력하세요 (ex. 소금빵)">
+                            <div style="margin-top:24px; color:var(--text-gray); font-size:14px; font-weight:600; margin-bottom:12px;">최근 검색된 기록</div>
+                            <div class="search-result-item" onclick="openInDiaryTab('detail')">
+                                <div style="font-size:12px; color:var(--primary-orange); margin-bottom:6px; font-weight:700;">2026년 3월 27일</div>
+                                <div style="font-size:15px; color:var(--text-dark); line-height:1.4;">배고파서 <b style="color:var(--primary-orange);">소금빵</b>을 먹은 날 🥐</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="diary-detail-view" style="display:none; flex-direction:column; flex:1; background-color:var(--bg-color); overflow-y:auto;">
+                        <div class="sub-header">
+                            <button class="back-btn" onclick="openInDiaryTab('main')"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
+                            <div class="sub-title">3월 27일의 기록</div>
+                            <button onclick="deleteDiary(window.currentViewingDiaryId)"
+                                    style="background:none; border:none; cursor:pointer; color:var(--text-gray);">
+                                <span class="material-symbols-rounded">delete</span>
+                            </button>
+                        </div>
+                        <div style="padding: 20px; display:flex; flex-direction:column; gap:30px;">
+                            <div>
+                                <div class="detail-section-title">나의 일기</div>
+                                <div class="detail-diary-box">
+                                    오늘은 아침부터 배가 너무 고파서 집 근처 베이커리에 갔다.<br><br>
+                                    갓 구운 소금빵 냄새가 너무 좋아서 홀린듯이 3개나 사버렸다. 따뜻한 커피랑 같이 먹으니 세상을 다 가진 기분이었다! 🥐☕
+                                </div>
+                            </div>
+                            <div>
+                                <div class="detail-section-title">AI와의 대화 내역</div>
+                                <div class="detail-chat-box">
+                                    <div class="chat-bubble bubble-user">오늘 소금빵 3개나 먹었어! 너무 맛있더라.</div>
+                                    <div class="chat-bubble bubble-ai">와, 소금빵 정말 맛있죠! 갓 구운 빵 냄새가 여기까지 나는 것 같아요. 기분 좋은 하루를 시작하셨네요! 😊</div>
+                                    <div class="chat-bubble bubble-user">응! 근데 다이어트 중인데 살찔까봐 조금 걱정되긴 해 ㅋㅋㅋ</div>
+                                    <div class="chat-bubble bubble-ai">맛있게 먹으면 0칼로리라는 말도 있잖아요! 오늘 하루쯤은 맛있는 걸로 힐링하는 것도 건강에 좋답니다. 이따 저녁에 가볍게 산책을 해보는 건 어떨까요? 🚶‍♀️</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-page">
+                    <header>
+                        <div class="logo">할 일</div>
+                        <span class="material-symbols-rounded bell-icon" onclick="openSubPage('addTodo')">add</span>
+                    </header>
+                    <div class="todo-container">
+                        <div class="todo-section" id="todo-list-daily">
+                            <h3 class="todo-title daily">매일</h3>
+                        </div>
+                        <div class="todo-section" id="todo-list-weekly">
+                            <h3 class="todo-title weekly">매주</h3>
+                        </div>
+                        <div class="todo-section" id="todo-list-monthly">
+                            <h3 class="todo-title monthly">매월</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-page">
+                    <header>
+                        <div class="logo">내 정보</div>
+                        <span class="material-symbols-rounded bell-icon" onclick="openSubPage('settings')">settings</span>
+                    </header>
+                    <div class="profile-container">
+                        <div class="profile-section">
+                            <h3 class="profile-title">계정</h3>
+                            <div class="profile-card account-card">
+                                <div class="profile-avatar"><span class="material-symbols-rounded">person</span></div>
+                                <div class="profile-info">
+                                    <div class="profile-name">이태경님 <span class="kakao-badge">K</span></div>
+                                    <div class="profile-email">kakao_user@kakao.com</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="profile-section">
+                            <h3 class="profile-title">내 기록</h3>
+                            <div class="profile-card stats-card">
+                                <div class="stat-item"><div class="stat-number">45<span class="stat-unit">장</span></div><div class="stat-label">쓴 일기</div></div>
+                                <div class="stat-divider"></div>
+                                <div class="stat-item"><div class="stat-number">23<span class="stat-unit">일</span></div><div class="stat-label">연속 달성</div></div>
+                            </div>
+                        </div>
+                        <div class="profile-section">
+                            <h3 class="profile-title">월간 레포트</h3>
+                            <button class="profile-card report-btn" onclick="openSubPage('report')">
+                                <div class="report-btn-content"><span class="material-symbols-rounded" style="color: var(--primary-orange);">bar_chart</span><span>레포트 보기</span></div>
+                                <span class="material-symbols-rounded" style="color: #C0B8B3;">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="switchTab(0)"><span class="material-symbols-rounded">home</span><span>기록</span></button>
+            <button class="nav-item" onclick="switchTab(1)"><span class="material-symbols-rounded">menu_book</span><span>다이어리</span></button>
+            <button class="nav-item" onclick="switchTab(2)"><span class="material-symbols-rounded">check_circle</span><span>할 일</span></button>
+            <button class="nav-item" onclick="switchTab(3)"><span class="material-symbols-rounded">person</span><span>내 정보</span></button>
+        </nav>
+
+        <div id="sub-page">
+            <div class="sub-header">
+                <button class="back-btn" onclick="closeSubPage()"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
+                <div class="sub-title" id="sub-page-title">타이틀</div>
+            </div>
+            <div id="generic-content"></div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<!-- API -->
+<script src="js/api.js"></script>
+
+<!-- UI CORE -->
+<script src="js/modal.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/subpage.js"></script>
+<script src="js/ui.js"></script>
+
+<!-- FEATURES -->
+<script src="js/diary.js"></script>
+<script src="js/record.js"></script>
+<script src="js/todo.js"></script>
+<script src="js/user.js"></script>
+<script src="js/chat.js"></script>
+
+<!-- ENTRY -->
+<script src="js/main.js"></script>
+
+</body>
+</html>
