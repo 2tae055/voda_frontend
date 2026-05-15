@@ -56,30 +56,30 @@
                 </div>
             </div>
             
-        <div class="email-form-wrapper" id="signup-form-wrapper" style="display: none;">
-            <div style="font-size: 24px; font-weight: 800; color: var(--text-dark); margin-bottom: 10px;">환영합니다!<br>정보를 입력해주세요.</div>
-            <input type="email" id="signup-email" placeholder="이메일">
-            <input type="password" id="signup-password" placeholder="비밀번호">
-    
-            <input type="text" id="signup-name" placeholder="실명(이름)">
-            <input type="text" id="signup-nickname" placeholder="닉네임">
-    
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-                 <div style="font-size: 13px; font-weight: 600; color: var(--text-gray); padding-left: 4px;">생년월일</div>
-                 <input type="date" id="signup-birthdate" style="width: 100%; box-sizing: border-box;">
+            <div class="email-form-wrapper" id="signup-form-wrapper" style="display: none;">
+                <div style="font-size: 24px; font-weight: 800; color: var(--text-dark); margin-bottom: 10px;">환영합니다!<br>정보를 입력해주세요.</div>
+                <input type="email" id="signup-email" placeholder="이메일">
+                <input type="password" id="signup-password" placeholder="비밀번호">
+        
+                <input type="text" id="signup-name" placeholder="실명(이름)">
+                <input type="text" id="signup-nickname" placeholder="닉네임">
+        
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                     <div style="font-size: 13px; font-weight: 600; color: var(--text-gray); padding-left: 4px;">생년월일</div>
+                     <input type="date" id="signup-birthdate" style="width: 100%; box-sizing: border-box;">
+                </div>
+        
+                <div class="gender-group">
+                       <label><input type="radio" name="loginGender" value="MALE" style="display:none;"> <div class="gender-label">남성</div></label>
+                       <label><input type="radio" name="loginGender" value="FEMALE" style="display:none;"> <div class="gender-label">여성</div></label>
+                       <label><input type="radio" name="loginGender" value="OTHER" style="display:none;"> <div class="gender-label">기타</div></label>
+                </div>
+                <button class="login-btn btn-signup" onclick="submitSignup(this)">가입 및 로그인하기</button>
+        
+                <div class="toggle-form-text">
+                       이미 계정이 있으신가요? <span class="toggle-link" onclick="toggleEmailForm('login')">로그인</span>
+                </div>
             </div>
-    
-            <div class="gender-group">
-                   <label><input type="radio" name="loginGender" value="MALE" style="display:none;"> <div class="gender-label">남성</div></label>
-                   <label><input type="radio" name="loginGender" value="FEMALE" style="display:none;"> <div class="gender-label">여성</div></label>
-                   <label><input type="radio" name="loginGender" value="OTHER" style="display:none;"> <div class="gender-label">기타</div></label>
-            </div>
-            <button class="login-btn btn-signup" onclick="submitSignup(this)">가입 및 로그인하기</button>
-    
-            <div class="toggle-form-text">
-                   이미 계정이 있으신가요? <span class="toggle-link" onclick="toggleEmailForm('login')">로그인</span>
-            </div>
-        </div>
         </div>
 
         <div class="views-wrapper">
@@ -99,9 +99,7 @@
                         
                         <div class="streak-wrapper">
                             <div class="streak-top">
-                                <span class="streak-num" id="streak-num">
-    0
-</span>
+                                <span class="streak-num" id="streak-num">0</span>
                             </div>
                             <div class="streak-bottom">일 연속 작성</div>
                         </div>
@@ -170,6 +168,9 @@
                             </label>
                         </div>
                         <input type="text" class="diary-title-input" id="diary-title-input" placeholder="일기 제목을 적어주세요">
+
+                        <div style="font-size: 13px; color: var(--text-gray); font-weight: 600; margin-bottom: 8px;">첨부된 사진 (클릭 시 삭제)</div>
+                        <div id="diary-write-photo-box" style="display: flex; gap: 12px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 4px;"></div>
                         
                         <div id="diary-input" contenteditable="true" data-placeholder="오늘 하루는 어땠나요? 일기장 글씨를 드래그하면 AI가 예쁘게 다듬어줘요! 😊"></div>
                         <button class="diary-submit-btn" onclick="finishDiary()">작성 완료</button>
@@ -225,30 +226,56 @@
                     <div id="diary-detail-view" style="display:none; flex-direction:column; flex:1; background-color:var(--bg-color); overflow-y:auto;">
                         <div class="sub-header">
                             <button class="back-btn" onclick="openInDiaryTab('main')"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
-                            <div class="sub-title">3월 27일의 기록</div>
-                            <button onclick="deleteDiary(window.currentViewingDiaryId)"
-                                    style="background:none; border:none; cursor:pointer; color:var(--text-gray);">
-                                <span class="material-symbols-rounded">delete</span>
-                            </button>
+                            <div class="sub-title">일기 보기</div>
                         </div>
                         <div style="padding: 20px; display:flex; flex-direction:column; gap:30px;">
                             <div>
-                                <div class="detail-section-title">나의 일기</div>
-                                <div class="detail-diary-box">
-                                    오늘은 아침부터 배가 너무 고파서 집 근처 베이커리에 갔다.<br><br>
-                                    갓 구운 소금빵 냄새가 너무 좋아서 홀린듯이 3개나 사버렸다. 따뜻한 커피랑 같이 먹으니 세상을 다 가진 기분이었다! 🥐☕
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <div class="detail-section-title" style="margin-bottom: 0;">나의 일기</div>
+                                    <button onclick="openEditView()" style="background:none; border:none; color:var(--primary-orange); cursor:pointer; font-weight:700; font-size:13px; font-family:'Pretendard'; display:flex; align-items:center; gap:4px; padding:0;">
+                                        <span class="material-symbols-rounded" style="font-size:16px;">edit</span> 수정
+                                    </button>
                                 </div>
+                                <div class="detail-diary-box"></div>
                             </div>
+                            
+                            <div id="detail-photo-section" style="display: none;">
+                                <div class="detail-section-title">나의 사진</div>
+                                <div class="detail-photo-box" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;"></div>
+                            </div>
+
                             <div>
                                 <div class="detail-section-title">AI와의 대화 내역</div>
                                 <div class="detail-chat-box">
-                                    <div class="chat-bubble bubble-user">오늘 소금빵 3개나 먹었어! 너무 맛있더라.</div>
-                                    <div class="chat-bubble bubble-ai">와, 소금빵 정말 맛있죠! 갓 구운 빵 냄새가 여기까지 나는 것 같아요. 기분 좋은 하루를 시작하셨네요! 😊</div>
-                                    <div class="chat-bubble bubble-user">응! 근데 다이어트 중인데 살찔까봐 조금 걱정되긴 해 ㅋㅋㅋ</div>
-                                    <div class="chat-bubble bubble-ai">맛있게 먹으면 0칼로리라는 말도 있잖아요! 오늘 하루쯤은 맛있는 걸로 힐링하는 것도 건강에 좋답니다. 이따 저녁에 가볍게 산책을 해보는 건 어떨까요? 🚶‍♀️</div>
+                                    <div style="text-align:center; color:var(--text-gray); font-size:14px; padding:30px 0; font-weight:500;">
+                                        AI와의 대화 내역이 없습니다.
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div id="diary-edit-view" style="display:none; flex-direction:column; flex:1; background-color:var(--bg-color); padding: 10px 24px 24px 24px; position: relative;">
+                        <div class="sub-header" style="padding: 10px 0 20px 0; border: none; background: transparent;">
+                            <button class="back-btn" onclick="openInDiaryTab('detail')"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
+                            <div class="sub-title">일기 수정</div>
+                        </div>
+
+                        <div class="diary-header-box" style="margin-bottom: 14px;">
+                            <div style="font-size: 14px; color: #8F8985; font-weight: 500;">내용 수정하기</div>
+                            <label class="diary-photo-btn">
+                                <input type="file" id="diary-edit-photo-input" accept="image/*" style="display:none;" onchange="insertEditDiaryPhoto(this)">
+                                <span class="material-symbols-rounded">image</span> 사진 추가
+                            </label>
+                        </div>
+
+                        <div id="diary-edit-photo-section" style="display: none; margin-bottom: 16px;">
+                            <div class="detail-section-title" style="font-size: 13px; margin-bottom: 8px;">첨부된 사진 (클릭 시 삭제)</div>
+                            <div class="edit-photo-box" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;"></div>
+                        </div>
+                        <input type="text" class="diary-title-input" id="diary-edit-title-input" placeholder="일기 제목을 적어주세요">
+                        <div id="diary-edit-input" contenteditable="true" data-placeholder="내용을 수정해보세요! 😊" style="flex: 1; width: 100%; border: none; outline: none; background: transparent; font-family: 'Pretendard', sans-serif; font-size: 16px; color: var(--text-dark); line-height: 1.6; padding: 0; margin: 0; overflow-y: auto; cursor: text;"></div>
+                        <button class="diary-submit-btn" onclick="submitEditDiary()">수정 완료</button>
                     </div>
                 </div>
 
@@ -325,24 +352,20 @@
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
-<!-- API -->
 <script src="js/api.js"></script>
 
-<!-- UI CORE -->
 <script src="js/modal.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/navigation.js"></script>
 <script src="js/subpage.js"></script>
 <script src="js/ui.js"></script>
 
-<!-- FEATURES -->
 <script src="js/diary.js"></script>
 <script src="js/record.js"></script>
 <script src="js/todo.js"></script>
 <script src="js/user.js"></script>
 <script src="js/chat.js"></script>
 
-<!-- ENTRY -->
 <script src="js/main.js"></script>
 
 </body>

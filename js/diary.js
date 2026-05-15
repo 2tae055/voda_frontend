@@ -1,3 +1,4 @@
+window.currentDiaryDetail = null;
 let selectedRange = null;
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth() + 1;
@@ -137,12 +138,42 @@ async function fetchDiaryDetail(diaryId) {
         const response = await apiFetch(`/diaries/${diaryId}`);
         const detail = response.data;
 
+        window.currentDiaryDetail = detail;
+
         if (typeof openInDiaryTab === 'function') {
             openInDiaryTab('detail');
             const dateStr = new Date(detail.createdAt)
                 .toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
             document.querySelector('#diary-detail-view .sub-title').innerText = `${dateStr}의 기록`;
-            document.querySelector('.detail-diary-box').innerHTML = detail.content;
+            
+            // 이미지 분리 로직입니다
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = detail.content;
+
+            const images = tempDiv.querySelectorAll('img');
+            const photoSection = document.getElementById('detail-photo-section');
+            const photoBox = document.querySelector('.detail-photo-box');
+
+            if (images.length > 0) {
+                photoBox.innerHTML = ''; 
+                images.forEach(img => {
+                    img.style.height = '140px';
+                    img.style.width = 'auto';
+                    img.style.borderRadius = '12px';
+                    img.style.objectFit = 'cover';
+                    img.style.flexShrink = '0';
+                    img.style.boxShadow = '0 4px 10px rgba(0,0,0,0.05)';
+                    img.style.margin = '0';
+                    
+                    photoBox.appendChild(img);
+                });
+                photoSection.style.display = 'block';
+            } else {
+                photoSection.style.display = 'none';
+            }
+
+            // -----------------------------------
+            document.querySelector('.detail-diary-box').innerHTML = tempDiv.innerHTML;
             window.currentViewingDiaryId = diaryId;
         }
     } catch (error) {
@@ -153,20 +184,32 @@ async function fetchDiaryDetail(diaryId) {
 async function finishDiary() {
     const titleInput = document.getElementById('diary-title-input');
     const contentInput = document.getElementById('diary-input');
-    const title = titleInput.value.trim();
-    const content = contentInput.innerHTML;
+    const photoBox = document.getElementById('diary-write-photo-box'); // 새로 만든 작성 창 사진함
 
-    if (!title || !content.trim()) { 
-        alert('내용을 입력해주세요!'); 
+    const title = titleInput.value.trim();
+    let combinedContent = contentInput.innerHTML;
+
+    if (!title || (!combinedContent.trim() && photoBox.children.length === 0)) { 
+        alert('내용이나 사진을 입력해주세요!'); 
         return; 
     }
+
+    const images = photoBox.querySelectorAll('img');
+    images.forEach(img => {
+        const cloneImg = img.cloneNode(true);
+        cloneImg.style.maxWidth = "100%";
+        cloneImg.style.height = "auto";
+        cloneImg.style.borderRadius = "8px";
+        cloneImg.removeAttribute('onclick'); 
+        combinedContent += `<br>${cloneImg.outerHTML}`;
+    });
 
     try {
         const response = await apiFetch('/diaries', {
             method: 'POST',
             body: JSON.stringify({ 
                 title, 
-                content, 
+                content: combinedContent, 
                 photos: []
             })
         });
@@ -175,6 +218,8 @@ async function finishDiary() {
             alert('저장되었습니다!');
             titleInput.value = '';
             contentInput.innerHTML = '';
+            photoBox.innerHTML = ''; 
+            
             if (typeof openInRecordTab === 'function') openInRecordTab('default');
             renderCalendar(currentYear, currentMonth);
         }
@@ -183,25 +228,91 @@ async function finishDiary() {
     }
 }
 
+function openEditView() {
+    const detail = window.currentDiaryDetail;
+    if (detail) {
+        document.getElementById('diary-edit-title-input').value = detail.title || "";
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = detail.content || "";
+        
+        const images = tempDiv.querySelectorAll('img');
+        const editPhotoSection = document.getElementById('diary-edit-photo-section');
+        const editPhotoBox = document.querySelector('.edit-photo-box');
+        editPhotoBox.innerHTML = ''; 
+        
+        if (images.length > 0) {
+            images.forEach(img => {
+                img.style.height = '100px'; 
+                img.style.width = 'auto';
+                img.style.borderRadius = '8px';
+                img.style.objectFit = 'cover';
+                img.style.flexShrink = '0';
+                img.style.cursor = "pointer";
+                img.onclick = () => {
+                    const photoId = img.dataset.photoId; 
+                    if (photoId && photoId !== 'undefined' && photoId !== 'null') {
+                    deleteDiaryPhoto(photoId, img);
+                    } else {
+                        if (confirm('이 사진을 지울까요?')) img.remove();
+                    }
+                };
+                editPhotoBox.appendChild(img);
+            });
+            editPhotoSection.style.display = 'block';
+        } else {
+            editPhotoSection.style.display = 'none';
+        }
+
+        document.getElementById('diary-edit-input').innerHTML = tempDiv.innerHTML;
+    }
+    openInDiaryTab('edit');
+}
+
 async function updateDiary(diaryId) {
-    const titleInput = document.getElementById('diary-title-input');
-    const contentInput = document.getElementById('diary-input');
+    const titleInput = document.getElementById('diary-edit-title-input');
+    const contentInput = document.getElementById('diary-edit-input');
+    const editPhotoBox = document.querySelector('.edit-photo-box');
+
+    let finalContent = contentInput.innerHTML;
+
+    if (editPhotoBox && editPhotoBox.children.length > 0) {
+        const images = Array.from(editPhotoBox.children);
+        images.forEach(img => {
+            const clonedImg = img.cloneNode(true);
+            
+            clonedImg.removeAttribute('style');
+            clonedImg.style.maxWidth = "100%";
+            clonedImg.style.borderRadius = "8px";
+            clonedImg.style.display = "block";
+            clonedImg.style.margin = "10px 0";
+            
+            finalContent += '<br>' + clonedImg.outerHTML;
+        });
+    }
 
     try {
         const response = await apiFetch(`/diaries/${diaryId}`, {
             method: 'PATCH',
             body: JSON.stringify({
                 title: titleInput.value.trim(),
-                content: contentInput.innerHTML
+                content: finalContent 
             })
         });
 
         if (response.success) {
             alert('일기가 수정되었습니다. ✏️');
             loadDiaries(currentYear, currentMonth);
+            fetchDiaryDetail(diaryId);
         }
     } catch (error) {
         alert('수정에 실패했습니다: ' + error.message);
+    }
+}
+
+function submitEditDiary() {
+    if (window.currentViewingDiaryId) {
+        updateDiary(window.currentViewingDiaryId);
     }
 }
 
@@ -259,25 +370,85 @@ async function insertDiaryPhoto(inputElement) {
             if (!response.ok) throw new Error('사진 업로드 실패');
             
             const result = await response.json();
-            
             const imageUrl = result.data.url; 
 
             const img = document.createElement('img');
             img.src = imageUrl;
-            img.dataset.photoId = result.data.photoId;
-            img.style.maxWidth = "100%";
+            img.dataset.photoId = result.data.photoId; 
+            img.style.height = "100px";
+            img.style.width = "auto";
             img.style.borderRadius = "8px";
-            img.onclick = () => deleteDiaryPhoto(img.dataset.photoId, img);
+            img.style.objectFit = "cover";
+            img.style.flexShrink = "0";
+            img.style.cursor = "pointer";
+            img.onclick = () => {
+                const pid = img.dataset.photoId;
+                if (pid && pid !== 'undefined' && pid !== 'null') {
+                    deleteDiaryPhoto(pid, img);
+                } else {
+                    if (confirm('이 사진을 지울까요?')) {
+                        img.remove();
+                    }
+                }
+            };
 
-            const diaryInput = document.getElementById('diary-input');
-            diaryInput.appendChild(img);
-            diaryInput.appendChild(document.createElement('br'));
+            const photoBox = document.getElementById('diary-write-photo-box');
+            photoBox.appendChild(img);
             
-            diaryInput.focus();
         } catch (error) {
             alert("사진 업로드 중 오류가 발생했습니다: " + error.message);
         }
         
+        inputElement.value = ''; 
+    }
+}
+
+async function insertEditDiaryPhoto(inputElement) {
+    if (inputElement.files && inputElement.files[0]) {
+        const file = inputElement.files[0];
+        const formData = new FormData();
+        formData.append('file', file); 
+
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch('https://voda-backend.p-e.kr/common/upload', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('사진 업로드 실패');
+            const result = await response.json();
+            
+            const imageUrl = result.data.url; 
+            const photoId = result.data.photoId; 
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.dataset.photoId = photoId; 
+            img.style.height = '100px'; 
+            img.style.width = 'auto';
+            img.style.borderRadius = '8px';
+            img.style.objectFit = 'cover';
+            img.style.flexShrink = '0';
+            img.style.cursor = "pointer";
+
+            img.onclick = () => {
+                if (img.dataset.photoId) {
+                    deleteDiaryPhoto(img.dataset.photoId, img);
+                } else {
+                    if (confirm('이 사진을 지울까요?')) img.remove();
+                }
+            };
+
+            const editPhotoSection = document.getElementById('diary-edit-photo-section');
+            const editPhotoBox = document.querySelector('.edit-photo-box');
+            
+            editPhotoBox.appendChild(img);
+            editPhotoSection.style.display = 'block'; 
+
+        } catch (error) {
+            alert("사진 업로드 중 오류가 발생했습니다: " + error.message);
+        }
         inputElement.value = ''; 
     }
 }

@@ -21,13 +21,16 @@ async function loadTodos() {
                         ${formatDueTo(todo.dueTo)}
                     </span>
                 </div>
-                <input type="checkbox" class="todo-check" ${todo.status ? 'checked' : ''}
-                       onchange="toggleTodoStatus('${todo.todoId}', this.checked)">
-                <span class="check-mark material-symbols-rounded"></span>
-                <button onclick="deleteTodo('${todo.todoId}')" 
-                        style="background:none; border:none; cursor:pointer; color:var(--text-gray); padding: 4px;">
-                    <span class="material-symbols-rounded" style="font-size:18px;">delete</span>
-                </button>
+                
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <input type="checkbox" class="todo-check" ${todo.status ? 'checked' : ''}
+                           onchange="toggleTodoStatus('${todo.todoId}', this.checked)">
+                    <span class="check-mark material-symbols-rounded"></span>
+                    <button onclick="deleteTodo('${todo.todoId}')" 
+                            style="background:none; border:none; cursor:pointer; color:var(--text-gray); padding: 4px; display: flex; align-items: center;">
+                        <span class="material-symbols-rounded" style="font-size:18px;">delete</span>
+                    </button>
+                </div>
             `;
             targetSection.appendChild(newLabel);
         });
