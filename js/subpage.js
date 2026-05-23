@@ -173,8 +173,24 @@ const subPageData = {
 
 
     report: {
-        title: '나의 월간 레포트',
-        content: `<div>리포트</div>`
+        title: '나의 레포트',
+        content: `
+            <div style="width:100%; background:#f7f7f7; min-height:100%;">
+                <div style="display:flex; background:white; padding:0 16px; border-bottom:1px solid #f0f0f0;">
+                    <button id="tab-monthly" onclick="switchReportTab('monthly')"
+                            style="flex:1; background:none; border:none; border-bottom:2px solid var(--primary-orange); padding:14px 0; font-size:15px; font-weight:700; color:var(--primary-orange); cursor:pointer; font-family:'Pretendard';">
+                        월간
+                    </button>
+                    <button id="tab-weekly" onclick="switchReportTab('weekly')"
+                            style="flex:1; background:none; border:none; border-bottom:2px solid transparent; padding:14px 0; font-size:15px; font-weight:600; color:var(--text-gray); cursor:pointer; font-family:'Pretendard';">
+                        주간
+                    </button>
+                </div>
+                <div id="report-list" style="padding:16px; display:flex; flex-direction:column; gap:12px;">
+                    <div style="text-align:center; color:var(--text-gray); padding:40px 0;">불러오는 중...</div>
+                </div>
+            </div>
+        `
     },
 
     settings: {
@@ -240,6 +256,10 @@ function openSubPage(pageId) {
     genericContent.style.padding = '0';
 
     subPage.classList.add('show');
+
+    if (pageId === 'report') {
+        loadReportPage();
+    }
 }
 
 function closeSubPage() {
