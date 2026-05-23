@@ -44,7 +44,11 @@ async function loadTodos() {
 async function addNewTodo() {
     const input = document.getElementById('new-todo-input');
     const text = input.value.trim();
-    if (!text) { alert('할 일 내용을 입력해주세요!'); return; }
+    
+    if (!text) { 
+        showSuccessModal('할 일 내용을 입력해주세요! ✍️', 1500); 
+        return; 
+    }
 
     const routine = document.querySelector('input[name="todoRoutine"]:checked').value;
     const dueTo = getDueToFromRoutine(routine);
@@ -59,31 +63,41 @@ async function addNewTodo() {
         });
 
         if (response.success) {
-            input.value = '';
-            alert('새로운 할 일이 추가되었습니다! ✔️');
-            if (typeof closeSubPage === 'function') closeSubPage();
-            loadTodos();
+            showSuccessModal('✨ 새로운 할 일이 추가되었습니다!', 1500, () => {
+                input.value = ''; 
+                if (typeof closeSubPage === 'function') closeSubPage(); 
+                if (typeof loadTodos === 'function') loadTodos(); 
+            });
         }
     } catch (error) {
-        alert("데이터 저장에 실패했습니다.");
+        showSuccessModal('❌ 데이터 저장에 실패했습니다.', 2000);
+        console.error('할 일 추가 에러:', error);
     }
 }
 
-async function deleteTodo(todoId) {
-    if (!confirm('이 할 일을 삭제하시겠습니까?')) return;
+function deleteTodo(todoId) {
+    
+    showConfirmModal('이 할 일을 삭제하시겠습니까?', async () => {
 
-    try {
-        const response = await apiFetch(`/todo/${todoId}`, {
-            method: 'DELETE'
-        });
+        try {
+            const response = await apiFetch(`/todo/${todoId}`, {
+                method: 'DELETE'
+            });
 
-        if (response.success) {
-            alert('할 일이 삭제되었습니다.');
-            loadTodos();
+            if (response.success) {
+                showSuccessModal('✨ 할 일이 삭제되었습니다.', 1500, () => {
+                    
+                    if (typeof loadTodos === 'function') {
+                        loadTodos();
+                    }
+                });
+            }
+        } catch (error) {
+            showSuccessModal('❌ 삭제에 실패했습니다.', 2000);
+            console.error('할 일 삭제 에러:', error);
         }
-    } catch (error) {
-        alert('삭제에 실패했습니다: ' + error.message);
-    }
+        
+    });
 }
 
 async function toggleTodoStatus(todoId) {

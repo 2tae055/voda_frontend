@@ -184,7 +184,7 @@ async function fetchDiaryDetail(diaryId) {
 async function finishDiary() {
     const titleInput = document.getElementById('diary-title-input');
     const contentInput = document.getElementById('diary-input');
-    const photoBox = document.getElementById('diary-write-photo-box'); // 새로 만든 작성 창 사진함
+    const photoBox = document.getElementById('diary-write-photo-box'); 
 
     const title = titleInput.value.trim();
     let combinedContent = contentInput.innerHTML;
@@ -194,37 +194,53 @@ async function finishDiary() {
         return; 
     }
 
-    const images = photoBox.querySelectorAll('img');
-    images.forEach(img => {
-        const cloneImg = img.cloneNode(true);
-        cloneImg.style.maxWidth = "100%";
-        cloneImg.style.height = "auto";
-        cloneImg.style.borderRadius = "8px";
-        cloneImg.removeAttribute('onclick'); 
-        combinedContent += `<br>${cloneImg.outerHTML}`;
-    });
-
-    try {
-        const response = await apiFetch('/diaries', {
-            method: 'POST',
-            body: JSON.stringify({ 
-                title, 
-                content: combinedContent, 
-                photos: []
-            })
-        });
-
-        if (response.success) {
-            alert('저장되었습니다!');
-            titleInput.value = '';
-            contentInput.innerHTML = '';
-            photoBox.innerHTML = ''; 
+    // 🌟 1. 서버에 보내기 전에 "저장할까요?" 모달 띄우기
+    if (typeof showConfirmModal === 'function') {
+        showConfirmModal("일기를 저장할까요?", async () => {
             
-            if (typeof openInRecordTab === 'function') openInRecordTab('default');
-            renderCalendar(currentYear, currentMonth);
-        }
-    } catch (error) {
-        alert('저장 실패: ' + error.message);
+            // '예'를 눌렀을 때만 아래의 진짜 저장 로직이 실행됩니다!
+            
+            // 사진함에 있는 사진들을 본문에 합치기
+            const images = photoBox.querySelectorAll('img');
+            images.forEach(img => {
+                const cloneImg = img.cloneNode(true);
+                cloneImg.style.maxWidth = "100%";
+                cloneImg.style.height = "auto";
+                cloneImg.style.borderRadius = "8px";
+                cloneImg.removeAttribute('onclick'); 
+                combinedContent += `<br>${cloneImg.outerHTML}`;
+            });
+
+            try {
+                // 서버에 일기 저장 요청
+                const response = await apiFetch('/diaries', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        title, 
+                        content: combinedContent, 
+                        photos: []
+                    })
+                });
+
+                if (response.success) {
+                    // 🌟 2. 저장이 완료되면 "저장되었습니다!" 성공 모달 띄우기
+                    showSuccessModal("✨ 저장되었습니다!", 1500, () => {
+                        // 모달이 닫히고 나서 화면 초기화 및 이동
+                        titleInput.value = '';
+                        contentInput.innerHTML = '';
+                        photoBox.innerHTML = ''; 
+                        
+                        if (typeof openInRecordTab === 'function') openInRecordTab('default');
+                        renderCalendar(currentYear, currentMonth);
+                    });
+                }
+            } catch (error) {
+                alert('저장 실패: ' + error.message);
+            }
+            
+        });
+    } else {
+        alert('모달 함수를 찾을 수 없습니다.');
     }
 }
 
@@ -254,9 +270,21 @@ function openEditView() {
                     if (photoId && photoId !== 'undefined' && photoId !== 'null') {
                     deleteDiaryPhoto(photoId, img);
                     } else {
-                        if (confirm('이 사진을 지울까요?')) img.remove();
-                    }
-                };
+    // 투박한 기본 창 대신, 우리가 만든 예쁜 확인 모달 띄우기
+    if (typeof showConfirmModal === 'function') {
+        showConfirmModal('이 사진을 지울까요? 🗑️', () => {
+            img.remove(); // '예'를 눌렀을 때만 사진 삭제!
+
+            if (typeof closeCustomModal === 'function') {
+                closeCustomModal(); // 2. 🌟 [추가] 열려있는 모달창을 닫아줍니다!
+            }
+        });
+    } else {
+        // 혹시라도 모달 함수를 못 찾을 때를 대비한 안전장치
+        if (confirm('이 사진을 지울까요?')) img.remove();
+    }
+}
+};
                 editPhotoBox.appendChild(img);
             });
             editPhotoSection.style.display = 'block';
@@ -301,9 +329,13 @@ async function updateDiary(diaryId) {
         });
 
         if (response.success) {
-            alert('일기가 수정되었습니다. ✏️');
-            loadDiaries(currentYear, currentMonth);
-            fetchDiaryDetail(diaryId);
+    showSuccessModal('✨ 일기가 수정되었습니다.', 1500, () => {
+        
+        if (typeof loadDiaries === 'function') loadDiaries(currentYear, currentMonth);
+        if (typeof fetchDiaryDetail === 'function') fetchDiaryDetail(diaryId);
+        
+    });
+
         }
     } catch (error) {
         alert('수정에 실패했습니다: ' + error.message);
@@ -334,20 +366,26 @@ async function deleteDiary(diaryId) {
     }
 }
 
-async function deleteDiaryPhoto(diaryPhotoId, imgElement) {
-    if (!confirm('이 사진을 삭제하시겠습니까?')) return;
+function deleteDiaryPhoto(diaryPhotoId, imgElement) {
+    
+    showConfirmModal('이 사진을 정말 삭제하시겠습니까? 🗑️', async () => {
+        
+        try {
+            const response = await apiFetch(`/diaries/photos/${diaryPhotoId}`, {
+                method: 'DELETE'
+            });
 
-    try {
-        const response = await apiFetch(`/diaries/photos/${diaryPhotoId}`, {
-            method: 'DELETE'
-        });
-
-        if (response.success) {
-            imgElement.remove();
+            if (response.success) {
+                showSuccessModal('✨ 사진이 성공적으로 삭제되었습니다.', 1500, () => {
+                    if (imgElement) imgElement.remove();
+                });
+            }
+        } catch (error) {
+            showSuccessModal('❌ 사진 삭제에 실패했습니다.', 2000);
+            console.error('사진 삭제 에러:', error);
         }
-    } catch (error) {
-        alert('사진 삭제에 실패했습니다: ' + error.message);
-    }
+        
+    });
 }
 
 async function insertDiaryPhoto(inputElement) {
@@ -386,11 +424,21 @@ async function insertDiaryPhoto(inputElement) {
                 if (pid && pid !== 'undefined' && pid !== 'null') {
                     deleteDiaryPhoto(pid, img);
                 } else {
-                    if (confirm('이 사진을 지울까요?')) {
-                        img.remove();
-                    }
-                }
-            };
+    if (typeof showConfirmModal === 'function') {
+        showConfirmModal('이 사진을 지울까요? 🗑️', () => {
+            img.remove();
+
+            if (typeof closeCustomModal === 'function') {
+                closeCustomModal(); // 2. 🌟 [추가] 열려있는 모달창을 닫아줍니다!
+            }
+        });
+    } else {
+        if (confirm('이 사진을 지울까요?')) {
+            img.remove();
+        }
+    }
+}
+};
 
             const photoBox = document.getElementById('diary-write-photo-box');
             photoBox.appendChild(img);
@@ -436,7 +484,13 @@ async function insertEditDiaryPhoto(inputElement) {
                 if (img.dataset.photoId) {
                     deleteDiaryPhoto(img.dataset.photoId, img);
                 } else {
-                    if (confirm('이 사진을 지울까요?')) img.remove();
+                    showConfirmModal('이 사진을 지울까요? 🗑️', () => {
+                        img.remove(); 
+
+                        if (typeof closeCustomModal === 'function') {
+                closeCustomModal(); // 2. 🌟 [추가] 열려있는 모달창을 닫아줍니다!
+            }
+                    });
                 }
             };
 
@@ -447,12 +501,13 @@ async function insertEditDiaryPhoto(inputElement) {
             editPhotoSection.style.display = 'block'; 
 
         } catch (error) {
-            alert("사진 업로드 중 오류가 발생했습니다: " + error.message);
+            showSuccessModal("❌ 사진 업로드 중 오류가 발생했습니다.", 2000);
+            console.error("사진 업로드 에러:", error);
         }
+        
         inputElement.value = ''; 
     }
 }
-
 function handleTextSelection() {
     const diaryInputEl = document.getElementById('diary-input');
     const aiTooltip = document.getElementById('ai-polish-tooltip');
