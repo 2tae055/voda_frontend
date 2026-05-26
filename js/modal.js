@@ -67,20 +67,33 @@ function showLoadingModal(text, duration, onComplete) {
     }
 }
 
+let modalTimer = null; 
+
 function showSuccessModal(text, duration, onComplete) {
+    const overlay = document.getElementById('custom-modal-overlay');
+    const modalText = document.getElementById('custom-modal-text');
+    const modalBtns = document.getElementById('custom-modal-btns');
+
+    if (!overlay || !modalText) return;
+
+    if (modalTimer) {
+        clearTimeout(modalTimer);
+        modalTimer = null;
+    }
 
     modalText.innerHTML = text;
+    if (modalBtns) modalBtns.style.display = 'none';
 
-    modalBtns.style.display = 'none';
+    overlay.style.display = 'flex';
+    overlay.style.opacity = '1'; 
+    overlay.style.zIndex = '99999';
 
-    setTimeout(() => {
-
-        closeCustomModal();
-
+    modalTimer = setTimeout(() => {
+        overlay.style.display = 'none';
+        
         if (onComplete) {
-            setTimeout(onComplete, 200);
+            onComplete(); 
         }
-
     }, duration);
 }
 window.closeCustomModal = closeCustomModal;

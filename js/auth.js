@@ -101,13 +101,13 @@ async function submitEmailLogin(btnElement) {
         );
 
 
-        alert('로그인 성공');
+        showSuccessModal("✨ 로그인 성공!", 1500, () => {
         enterMainApp();
         setTimeout(async () => {
 
     await initializeApp();
 
-}, 100);
+}, 100); });
         loadMyProfile();
         
 
