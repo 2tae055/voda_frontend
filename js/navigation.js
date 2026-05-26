@@ -16,27 +16,7 @@ function switchTab(tabIndex) {
     if (tabIndex === 1) openInDiaryTab('main');
 }
 
-async function openInRecordTab(viewType) {
-    if (viewType !== 'default') {
-        try {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = today.getMonth() + 1;
-            const todayStr = `${year}-${String(month).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            
-            const response = await apiFetch(`/diaries/monthly-summary?year=${year}&month=${month}`);
-            const dates = response.data.dates || [];
-            const todayData = dates.find(d => d.date === todayStr);
-            
-            if (todayData && todayData.diaries && todayData.diaries.length > 0) {
-                alert('오늘은 이미 일기를 작성했어요! 다이어리 탭에서 내용을 확인하고 수정해 보세요. 😊');
-                return; 
-            }
-        } catch (error) {
-            console.error("일기 기록 확인 중 오류:", error);
-        }
-    }
-
+function openInRecordTab(viewType) {
     const views = ['default', 'chat', 'diary', 'call', 'mic'];
 
     views.forEach(v => {
@@ -106,25 +86,7 @@ function triggerEndSessionFlow(type) {
     });
 }
 
-async function triggerAutoDiary() {
-    try {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = today.getMonth() + 1;
-        const todayStr = `${year}-${String(month).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        
-        const response = await apiFetch(`/diaries/monthly-summary?year=${year}&month=${month}`);
-        const dates = response.data.dates || [];
-        const todayData = dates.find(d => d.date === todayStr);
-        
-        if (todayData && todayData.diaries && todayData.diaries.length > 0) {
-            alert('오늘은 이미 일기를 작성했어요! 다이어리 탭에서 내용을 확인해 보세요. 😊');
-            return; 
-        }
-    } catch (error) {
-        console.error("일기 기록 확인 중 오류:", error);
-    }
-
+function triggerAutoDiary() {
     showConfirmModal(
         "사용자님의 일정과 그 동안의 대화를 종합해서<br>일기를 작성할까요?",
         () => {

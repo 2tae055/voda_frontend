@@ -270,17 +270,16 @@ function openEditView() {
                     if (photoId && photoId !== 'undefined' && photoId !== 'null') {
                     deleteDiaryPhoto(photoId, img);
                     } else {
-    // 투박한 기본 창 대신, 우리가 만든 예쁜 확인 모달 띄우기
     if (typeof showConfirmModal === 'function') {
         showConfirmModal('이 사진을 지울까요? 🗑️', () => {
-            img.remove(); // '예'를 눌렀을 때만 사진 삭제!
+            img.remove(); 
 
             if (typeof closeCustomModal === 'function') {
-                closeCustomModal(); // 2. 🌟 [추가] 열려있는 모달창을 닫아줍니다!
+                closeCustomModal(); 
             }
         });
     } else {
-        // 혹시라도 모달 함수를 못 찾을 때를 대비한 안전장치
+      
         if (confirm('이 사진을 지울까요?')) img.remove();
     }
 }
