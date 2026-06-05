@@ -5,6 +5,8 @@ let isMicRecording = false;
 let isCalling = false;
 let callTimerInterval;
 let callSeconds = 0;
+let mediaRecorder;
+let audioChunks = [];
 
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
@@ -48,36 +50,122 @@ if (SpeechRecognition) {
 
     recognition.onend = () => {
         if (isMicRecording) {
-            console.log("음성 인식 재시작...");
-            recognition.start();
+            try { recognition.start(); } catch(e) {}
         }
     };
 
     recognition.onerror = (event) => {
-        console.error("음성 인식 오류:", event.error);
-        stopMicRecord();
+        if (event.error !== 'aborted') {
+            console.error("음성 인식 오류:", event.error);
+        }
     };
 }
 
-function startMicRecord() {
-    if (!recognition) {
-        alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
-        return;
-    }
+async function startMicRecord() {
     if (isMicRecording) return;
 
-    isMicRecording = true;
-    document.getElementById('mic-status-text').innerText = "듣고 있어요... 말씀해 주세요.";
-    recognition.start();
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); 
+            await sendVoiceDiaryAPI(audioBlob);
+        };
+
+        mediaRecorder.start();
+        isMicRecording = true;
+        document.getElementById('mic-status-text').innerText = "듣고 있어요... 말씀해 주세요.";
+
+        if (recognition) {
+            try { recognition.start(); } catch(e) {}
+        }
+
+    } catch (err) {
+        alert("마이크 권한을 허용해 주세요!");
+        console.error("마이크 접근 에러:", err);
+    }
 }
 
 function stopMicRecord() {
-    if (recognition && isMicRecording) {
-        recognition.stop();
-        isMicRecording = false;
-        document.getElementById('mic-status-text').innerText = "마이크가 꺼졌습니다.";
+    if (!isMicRecording) return;
+    isMicRecording = false;
+
+    document.getElementById('mic-status-text').innerText = "마이크가 꺼졌습니다.";
+
+    if (recognition) recognition.stop();
+    
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop(); 
     }
 }
+
+async function sendVoiceDiaryAPI(audioBlob) {
+    if (typeof showLoadingModal === 'function') {
+        showLoadingModal("✨ AI가 음성을 분석해서<br>일기를 작성하고 있어요...", 0);
+    }
+
+    try {
+        const formData = new FormData();
+        
+        formData.append('file', audioBlob, 'voice_record.webm');
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        formData.append('targetDate', `${year}-${month}-${day}`);
+
+        const token = localStorage.getItem('accessToken');
+        
+        const response = await fetch('https://voda-backend.p-e.kr/diaries/voice-predict', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (typeof closeCustomModal === 'function') closeCustomModal();
+
+        if (result.success) {
+            // 1. 달력 갱신
+            if (typeof window.renderCalendar === 'function') {
+                const now = new Date();
+                window.renderCalendar(now.getFullYear(), now.getMonth() + 1);
+            }
+            
+            // 🌟 2. 유저 정보 다시 불러오기
+            if (typeof window.loadMyProfile === 'function') {
+                window.loadMyProfile();
+            }
+
+            if (typeof showSuccessModal === 'function') {
+                showSuccessModal("✨ 음성 일기가 예쁘게 저장되었습니다!", 1500, () => {
+                    document.getElementById('mic-status-text').innerText = "기록이 완료되었습니다.";
+
+                    if (typeof openInRecordTab === 'function') openInRecordTab('default');
+                });
+            }
+        } else {
+            alert("일기 생성 실패: " + (result.message || "알 수 없는 오류"));
+        }
+    } catch (error) {
+        console.error("음성 일기 전송 에러:", error);
+        if (typeof closeCustomModal === 'function') closeCustomModal();
+        alert("음성 일기 전송 중 오류가 발생했습니다.");
+    }
+}
+
 
 function startCall() {
     if (isCalling) return;
@@ -86,11 +174,15 @@ function startCall() {
         return;
     }
 
+    if (typeof window.startChatDiary === 'function') {
+        window.startChatDiary('call');
+    }
+
     isCalling = true;
     callSeconds = 0;
     
     document.getElementById('call-timer').innerText = '00:00';
-    document.getElementById('call-messages').innerHTML = '<div class="chat-bubble bubble-ai">안녕하세요! 오늘 하루는 어떠셨나요? 😊</div>';
+    document.getElementById('call-messages').innerHTML = ''; 
     
     callTimerInterval = setInterval(() => {
         callSeconds++;
@@ -102,29 +194,43 @@ function startCall() {
     callRecognition = new SpeechRecognition();
     callRecognition.lang = 'ko-KR';
     
+    callRecognition.onerror = (event) => {
+        if (event.error === 'aborted') {
+            console.log("🎙️ 마이크가 정상적으로 종료되었습니다.");
+            return;
+        }
+        console.error("🎙️ 통화 마이크 에러 발생:", event.error);
+        if (event.error === 'not-allowed') {
+            alert("브라우저 설정에서 마이크 권한을 허용해 주세요!");
+        }
+    };
+
+    callRecognition.onend = () => {
+        const currentStatus = document.getElementById('call-mic-text').innerText;
+        if (isCalling && currentStatus === "듣고 있어요...") {
+            try { callRecognition.start(); } catch(e) {}
+        }
+    };
+    
     callRecognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
-        appendCallMessage(transcript, "user");
         
-        // AI 응답 시뮬레이션 (백엔드 연결 전)
+        appendCallMessage(transcript, "user");
         document.getElementById('call-mic-text').innerText = "AI가 생각 중...";
-        setTimeout(() => {
-            if (!isCalling) return;
-            const response = "정말 멋진 하루를 보내셨네요! 더 자세히 들려주세요.";
-            appendCallMessage(response, "ai");
-            speakText(response, () => {
-                if (isCalling) {
-                    document.getElementById('call-mic-text').innerText = "듣고 있어요...";
-                    callRecognition.start();
-                }
+        
+        if (window.socket && window.currentChatRoomId) {
+            window.socket.emit('conversation:message', {
+                type: 'call',
+                roomId: window.currentChatRoomId,
+                message: transcript
             });
-        }, 1500);
+        }
     };
 
     speakText("안녕하세요! 통화가 연결되었습니다. 편하게 말씀해 주세요.", () => {
         if (isCalling) {
             document.getElementById('call-mic-text').innerText = "듣고 있어요...";
-            callRecognition.start();
+            try { callRecognition.start(); } catch(e) {}
         }
     });
 }
@@ -135,10 +241,15 @@ function stopCall() {
     if (callRecognition) callRecognition.abort();
     window.speechSynthesis.cancel();
     document.getElementById('call-mic-text').innerText = "통화 종료";
+    
+    if (typeof window.endChatDiary === 'function') {
+        window.endChatDiary();
+    }
 }
 
 function appendCallMessage(text, sender) {
     const container = document.getElementById('call-messages');
+    if (!container) return;
     const bubble = document.createElement('div');
     bubble.className = `chat-bubble bubble-${sender}`;
     bubble.innerText = text;
@@ -146,9 +257,30 @@ function appendCallMessage(text, sender) {
     container.scrollTop = container.scrollHeight;
 }
 
+let currentUtterance = null; 
+
 function speakText(text, callback) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ko-KR';
-    utterance.onend = () => { if (callback) callback(); };
-    window.speechSynthesis.speak(utterance);
+    window.speechSynthesis.cancel(); 
+
+    currentUtterance = new SpeechSynthesisUtterance(text);
+    currentUtterance.lang = 'ko-KR';
+    
+    currentUtterance.onend = () => {
+        if (callback) callback();
+        if (isCalling && callRecognition) {
+            document.getElementById('call-mic-text').innerText = "듣고 있어요...";
+            try {
+                callRecognition.start();
+            } catch(e) {}
+        }
+    };
+    
+    setTimeout(() => {
+        window.speechSynthesis.speak(currentUtterance);
+    }, 100);
 }
+
+window.appendCallMessage = appendCallMessage;
+window.speakText = speakText;
+window.startMicRecord = startMicRecord;
+window.stopMicRecord = stopMicRecord;
