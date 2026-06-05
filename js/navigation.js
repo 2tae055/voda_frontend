@@ -89,18 +89,38 @@ function triggerEndSessionFlow(type) {
 function triggerAutoDiary() {
     showConfirmModal(
         "사용자님의 일정과 그 동안의 대화를 종합해서<br>일기를 작성할까요?",
-        () => {
-            showLoadingModal(
-                "⏳ 일기를 기록하는 중...<br>잠시만 기다려주세요.",
-                3000,
-                () => {
-                    showSuccessModal(
-                        "✨ 일기 작성 완료!",
-                        1000,
-                        () => { openInRecordTab('default'); }
-                    );
+        async () => {
+            try {
+                if (typeof showLoadingModal === 'function') {
+                    showLoadingModal("⏳ AI가 기억을 모아 일기를 작성 중입니다...<br>잠시만 기다려주세요.", 0);
                 }
-            );
+
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const targetDateStr = `${year}-${month}-${day}`;
+
+                const response = await predictDiary({ 
+                    targetDate: targetDateStr 
+                });
+
+                if (response.success || response.data?.savedDiary) {
+                    if (typeof showSuccessModal === 'function') {
+                        showSuccessModal("✨ 일기가 성공적으로 기록되었습니다!", 1500, () => {
+                            if (typeof openInDiaryTab === 'function') openInDiaryTab('main'); // 목록 화면으로 초기화
+                        });
+                    }
+                } else {
+                    throw new Error("서버 응답 오류");
+                }
+
+            } catch (error) {
+                console.error("일기 생성 실패:", error);
+                if (typeof showSuccessModal === 'function') {
+                    showSuccessModal("❌ 일기 생성에 실패했습니다.", 2000);
+                }
+            }
         }
     );
 }

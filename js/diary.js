@@ -113,23 +113,42 @@ function markDiariesOnCalendar(dates) {
 
 function checkDateRecord(dateStr, day) {
     const emptyText = document.getElementById('summary-empty-text');
-    const card = document.getElementById('summary-card');
+    const container = document.querySelector('.summary-container');
     
+    document.querySelectorAll('.dynamic-summary-card').forEach(el => el.remove());
+    
+    const staticCard = document.getElementById('summary-card');
+    if (staticCard) staticCard.style.display = 'none';
+
     const dayData = monthlyDiaries.find(d => d.date === dateStr);
 
     if (dayData && dayData.diaries && dayData.diaries.length > 0) {
-        const firstDiary = dayData.diaries[0];
-        emptyText.style.display = 'none';
-        card.style.display = 'flex';
+        emptyText.style.display = 'none'; 
         
-        document.getElementById('summary-card-date').innerText = `${currentMonth}월 ${day}일`;
-        document.getElementById('summary-card-content').innerText = firstDiary.title;
+        dayData.diaries.forEach(diary => {
+            const card = document.createElement('div');
+            card.className = 'summary-card dynamic-summary-card'; 
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.marginTop = '10px'; 
+            card.style.cursor = 'pointer';
+            
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="summary-date">${currentMonth}월 ${day}일</div>
+                    <span class="material-symbols-rounded" style="font-size:18px; color:var(--text-gray);">chevron_right</span>
+                </div>
+                <div class="summary-content" style="margin-top: 8px;">${diary.title || '제목 없는 일기'}</div>
+            `;
+            
+            card.onclick = () => fetchDiaryDetail(diary.diaryId);
+            
+            container.appendChild(card);
+        });
         
-        card.onclick = () => fetchDiaryDetail(firstDiary.diaryId);
     } else {
         emptyText.style.display = 'block';
         emptyText.innerText = `${currentMonth}월 ${day}일에는 작성된 기록이 없어요.`;
-        card.style.display = 'none';
     }
 }
 
@@ -146,7 +165,6 @@ async function fetchDiaryDetail(diaryId) {
                 .toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
             document.querySelector('#diary-detail-view .sub-title').innerText = `${dateStr}의 기록`;
             
-            // 이미지 분리 로직입니다
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = detail.content;
 
@@ -172,7 +190,6 @@ async function fetchDiaryDetail(diaryId) {
                 photoSection.style.display = 'none';
             }
 
-            // -----------------------------------
             document.querySelector('.detail-diary-box').innerHTML = tempDiv.innerHTML;
             window.currentViewingDiaryId = diaryId;
         }
@@ -194,13 +211,9 @@ async function finishDiary() {
         return; 
     }
 
-    // 🌟 1. 서버에 보내기 전에 "저장할까요?" 모달 띄우기
     if (typeof showConfirmModal === 'function') {
         showConfirmModal("일기를 저장할까요?", async () => {
-            
-            // '예'를 눌렀을 때만 아래의 진짜 저장 로직이 실행됩니다!
-            
-            // 사진함에 있는 사진들을 본문에 합치기
+
             const images = photoBox.querySelectorAll('img');
             images.forEach(img => {
                 const cloneImg = img.cloneNode(true);
@@ -212,7 +225,6 @@ async function finishDiary() {
             });
 
             try {
-                // 서버에 일기 저장 요청
                 const response = await apiFetch('/diaries', {
                     method: 'POST',
                     body: JSON.stringify({ 
@@ -223,15 +235,16 @@ async function finishDiary() {
                 });
 
                 if (response.success) {
-                    // 🌟 2. 저장이 완료되면 "저장되었습니다!" 성공 모달 띄우기
+                    renderCalendar(currentYear, currentMonth);
+                    
+                    if (typeof loadMyProfile === 'function') {
+                        loadMyProfile(); 
+                    }
+
                     showSuccessModal("✨ 저장되었습니다!", 1500, () => {
-                        // 모달이 닫히고 나서 화면 초기화 및 이동
                         titleInput.value = '';
                         contentInput.innerHTML = '';
                         photoBox.innerHTML = ''; 
-                        
-                        if (typeof openInRecordTab === 'function') openInRecordTab('default');
-                        renderCalendar(currentYear, currentMonth);
                     });
                 }
             } catch (error) {
@@ -428,7 +441,7 @@ async function insertDiaryPhoto(inputElement) {
             img.remove();
 
             if (typeof closeCustomModal === 'function') {
-                closeCustomModal(); // 2. 🌟 [추가] 열려있는 모달창을 닫아줍니다!
+                closeCustomModal(); 
             }
         });
     } else {
@@ -487,7 +500,7 @@ async function insertEditDiaryPhoto(inputElement) {
                         img.remove(); 
 
                         if (typeof closeCustomModal === 'function') {
-                closeCustomModal(); // 2. 🌟 [추가] 열려있는 모달창을 닫아줍니다!
+                closeCustomModal(); 
             }
                     });
                 }
@@ -546,7 +559,6 @@ async function polishSelectedText() {
         showLoadingModal("✨ 문장을 예쁘게 다듬고 있어요...", null, null);
     }
     
-    // 임시 교정 로직 (나중에 API 연결)
     setTimeout(() => {
         const polishedText = `✨ ${originalText} (교정됨)`; 
         
@@ -583,3 +595,81 @@ async function addKeywords(diaryId, keywords) {
         alert('키워드 저장에 실패했습니다: ' + error.message);
     }
 }
+
+async function predictDiary(requestData) {
+    return await apiFetch('/diaries/predict', {
+        method: 'POST',
+        body: JSON.stringify(requestData) 
+    });
+}
+
+async function voicePredictDiary(requestData) {
+    return await apiFetch('/diaries/voice-predict', {
+        method: 'POST',
+        body: JSON.stringify(requestData) 
+    });
+}
+
+async function loadAndShowChatDiary(roomId) {
+    try {
+        const response = await apiFetch(`/chat-rooms/${roomId}`);
+        
+        if (response.success) {
+            const messages = response.data.chatMessages;
+            
+            if (typeof openInDiaryTab === 'function') openInDiaryTab('detail');
+            
+            const dateStr = new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+            document.querySelector('#diary-detail-view .sub-title').innerText = `${dateStr}의 대화 기록`;
+            document.getElementById('detail-photo-section').style.display = 'none';
+            
+            const diaryBox = document.querySelector('.detail-diary-box');
+            if (diaryBox) {
+                diaryBox.innerHTML = '<div style="color:#999; font-size:14px; padding: 20px 0;">작성된 일기가 없습니다.</div>';
+            }
+            
+            let chatHtml = '<div style="display: flex; flex-direction: column; gap: 12px; padding: 10px; background: #fdfbf7; border-radius: 16px;">';
+            
+            if (!messages || messages.length === 0) {
+                chatHtml += '<div style="text-align:center; padding:20px; color:#999;">대화 내역이 없습니다.</div>';
+            } else {
+                messages.forEach(msg => {
+                    let text = msg.textContent;
+
+                    if (text.includes('ai_answer')) {
+                        try {
+                            const jsonStartIndex = text.indexOf('{');
+                            const jsonString = text.substring(jsonStartIndex);
+                            const parsed = JSON.parse(jsonString);
+                            text = parsed.ai_answer || text;
+                        } catch (e) {}
+                    }
+
+                    text = text.replace(/^USER:\s*/i, '');
+                    text = text.replace(/^AI:\s*/i, '');
+
+                    const timeStr = new Date(msg.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                    
+                    chatHtml += `
+                        <div style="padding: 14px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); border: 1px solid #f0ede9;">
+                            <p style="margin: 0; font-size: 15px; color: #333; line-height: 1.5; font-family:'Pretendard';">${text}</p>
+                            <small style="color: #bbb; font-size: 11px; display: block; margin-top: 6px; text-align: right;">${timeStr}</small>
+                        </div>
+                    `;
+                });
+            }
+            chatHtml += '</div>';
+            
+            const chatBox = document.querySelector('.detail-chat-box');
+            if (chatBox) {
+                chatBox.innerHTML = chatHtml;
+            }
+        }
+    } catch (error) {
+        console.error("대화 내역 렌더링 에러:", error);
+    }
+}
+
+window.loadAndShowChatDiary = loadAndShowChatDiary;
+window.predictDiary = predictDiary;
+window.voicePredictDiary = voicePredictDiary;

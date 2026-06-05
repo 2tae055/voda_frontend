@@ -1,6 +1,6 @@
 // 월간 보고서 생성
 async function createMonthlyReport(data) {
-    return await apiFetch('/report', {
+    return await apiFetch('/report/generate/monthly', { // 주소 변경됨
         method: 'POST',
         body: JSON.stringify(data)
     });
@@ -34,7 +34,7 @@ async function deleteMonthlyReport(reportId) {
 
 // 주간 보고서 생성
 async function createWeeklyReport(data) {
-    return await apiFetch('/report/weekly', {
+    return await apiFetch('/report/generate/weekly', { 
         method: 'POST',
         body: JSON.stringify(data)
     });
@@ -101,27 +101,48 @@ function renderReportList(reports, type) {
     const listEl = document.getElementById('report-list');
     if (!listEl) return;
 
+    const btnLabel = type === 'monthly' ? '월간 보고서 새로 생성하기' : '주간 보고서 새로 생성하기';
+    const btnAction = type === 'monthly' ? 'handleCreateMonthlyReport()' : 'handleCreateWeeklyReport()';
+    const generateBtnHTML = `
+        <button onclick="${btnAction}" style="width:100%; margin-bottom:16px; background:white; color:var(--text-dark); border:1px solid #E0E0E0; padding:14px; border-radius:16px; font-size:15px; font-weight:700; cursor:pointer; font-family:'Pretendard'; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+            <span class="material-symbols-rounded" style="color:var(--primary-orange); font-size:20px;">add_circle</span> ${btnLabel}
+        </button>
+    `;
+
     if (!reports || reports.length === 0) {
-        listEl.innerHTML = `<div style="text-align:center; color:var(--text-gray); padding:40px 0;">보고서가 없습니다</div>`;
+        listEl.innerHTML = generateBtnHTML + `<div style="text-align:center; color:var(--text-gray); padding:40px 0;">보고서가 없습니다</div>`;
         return;
     }
 
-    listEl.innerHTML = reports.map(r => {
+    // ... (위쪽 코드 동일) ...
+
+    const listHTML = reports.map(r => {
         const date = new Date(r.baseDate);
         const label = type === 'monthly'
             ? `${date.getFullYear()}년 ${date.getMonth() + 1}월`
             : `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 주`;
         return `
             <div onclick="openReportDetail('${r.reportId}', '${type}')"
-                 style="background:white; border-radius:16px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,0.06); cursor:pointer; display:flex; align-items:center; justify-content:space-between;">
+                 style="background:white; border-radius:16px; padding:20px; margin-bottom: 12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); cursor:pointer; display:flex; align-items:center; justify-content:space-between;">
                 <div>
                     <div style="font-size:16px; font-weight:700; color:var(--text-dark);">${label}</div>
                     <div style="font-size:13px; color:var(--text-gray); margin-top:4px;">${type === 'monthly' ? '월간' : '주간'} 레포트</div>
                 </div>
-                <span class="material-symbols-rounded" style="color:var(--text-gray);">chevron_right</span>
+                
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-rounded" style="color:var(--text-gray);">chevron_right</span>
+                    
+                    <button onclick="handleDeleteReport(event, '${r.reportId}', '${type}')" 
+                            style="background:none; border:none; cursor:pointer; color:var(--text-gray); padding: 4px; display: flex; align-items: center;">
+                        <span class="material-symbols-rounded" style="font-size:20px;">delete</span>
+                    </button>
+                </div>
             </div>
         `;
     }).join('');
+
+    // 버튼과 목록을 합쳐서 화면에 표시
+    listEl.innerHTML = generateBtnHTML + listHTML;
 }
 
 async function openReportDetail(reportId, type) {
@@ -213,6 +234,76 @@ function renderReportDetail(data, type) {
     `;
 }
 
+async function handleCreateMonthlyReport() {
+    try {
+        if (typeof showLoadingModal === 'function') {
+            showLoadingModal("⏳ 월간 보고서를 생성하는 중...<br>잠시만 기다려주세요.", 0);
+        }
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+        const response = await createMonthlyReport({ baseDate: todayStr });
+        
+        if (typeof showSuccessModal === 'function') {
+            showSuccessModal('✨ 월간 보고서가 생성되었습니다!', 1500, () => switchReportTab('monthly'));
+        }
+    } catch (error) {
+        console.error('월간 보고서 생성 에러:', error);
+        if (typeof showSuccessModal === 'function') {
+            showSuccessModal('❌ 생성에 실패했습니다.', 2000);
+        }
+    }
+}
+
+async function handleCreateWeeklyReport() {
+    try {
+        if (typeof showLoadingModal === 'function') {
+            showLoadingModal("⏳ 주간 보고서를 생성하는 중...<br>잠시만 기다려주세요.", 0);
+        }
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+        const response = await createWeeklyReport({ baseDate: todayStr });
+        
+        if (typeof showSuccessModal === 'function') {
+            showSuccessModal('✨ 주간 보고서가 생성되었습니다!', 1500, () => switchReportTab('weekly'));
+        }
+    } catch (error) {
+        console.error('주간 보고서 생성 에러:', error);
+        if (typeof showSuccessModal === 'function') {
+            showSuccessModal('❌ 생성에 실패했습니다.', 2000);
+        }
+    }
+}
+
+async function handleDeleteReport(event, reportId, type) {
+    event.stopPropagation(); 
+
+    showConfirmModal('이 보고서를 정말 삭제하시겠습니까?', async () => {
+        try {
+            if (typeof showLoadingModal === 'function') {
+                showLoadingModal("⏳ 레포트를 삭제하는 중...", 0);
+            }
+
+            const response = type === 'monthly'
+                ? await deleteMonthlyReport(reportId)
+                : await deleteWeeklyReport(reportId);
+
+            if (typeof showSuccessModal === 'function') {
+                showSuccessModal('✨ 레포트가 삭제되었습니다.', 1500, () => {
+                    switchReportTab(type); 
+                });
+            }
+        } catch (error) {
+            console.error('보고서 삭제 에러:', error);
+            if (typeof showSuccessModal === 'function') {
+                showSuccessModal('❌ 삭제에 실패했습니다.', 2000);
+            }
+        }
+    });
+}
+
+window.handleDeleteReport = handleDeleteReport;
+window.handleCreateMonthlyReport = handleCreateMonthlyReport;
+window.handleCreateWeeklyReport = handleCreateWeeklyReport;
 window.createMonthlyReport = createMonthlyReport;
 window.getMonthlyReports = getMonthlyReports;
 window.getMonthlyReportByMonth = getMonthlyReportByMonth;

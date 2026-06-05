@@ -72,5 +72,30 @@ async function loadMyProfile() {
     }
 }
 
+function handleLogout() {
+    if (typeof showConfirmModal === 'function') {
+        showConfirmModal('정말 로그아웃 하시겠습니까?', executeLogout);
+    } else {
+        if (confirm('정말 로그아웃 하시겠습니까?')) {
+            executeLogout();
+        }
+    }
+}
+
+function executeLogout() {
+    localStorage.clear();
+    sessionStorage.clear();
+
+    if (typeof showSuccessModal === 'function') {
+        showSuccessModal('로그아웃 되었습니다. 👋', 1200, () => {
+            window.location.replace('/'); 
+        });
+    } else {
+        alert('로그아웃 되었습니다.');
+        window.location.reload(true);
+    }
+}
+
+window.handleLogout = handleLogout;
 window.loadMyProfile = 
     loadMyProfile;
