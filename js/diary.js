@@ -155,49 +155,116 @@ function checkDateRecord(dateStr, day) {
 async function fetchDiaryDetail(diaryId) {
     try {
         const response = await apiFetch(`/diaries/${diaryId}`);
-        const detail = response.data;
+        const diary = response.data;
 
-        window.currentDiaryDetail = detail;
+        window.currentDiaryDetail = diary;
+        window.currentViewingDiaryId = diaryId;
 
-        if (typeof openInDiaryTab === 'function') {
-            openInDiaryTab('detail');
-            const dateStr = new Date(detail.createdAt)
-                .toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
-            document.querySelector('#diary-detail-view .sub-title').innerText = `${dateStr}의 기록`;
-            
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = detail.content;
+        openInDiaryTab('detail'); 
+        
+        const dateStr = new Date(diary.createdAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+        document.querySelector('#diary-detail-view .sub-title').innerText = `${dateStr}의 기록`;
 
-            const images = tempDiv.querySelectorAll('img');
-            const photoSection = document.getElementById('detail-photo-section');
-            const photoBox = document.querySelector('.detail-photo-box');
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = diary.content || '';
 
-            if (images.length > 0) {
-                photoBox.innerHTML = ''; 
-                images.forEach(img => {
-                    img.style.height = '140px';
-                    img.style.width = 'auto';
-                    img.style.borderRadius = '12px';
-                    img.style.objectFit = 'cover';
-                    img.style.flexShrink = '0';
-                    img.style.boxShadow = '0 4px 10px rgba(0,0,0,0.05)';
-                    img.style.margin = '0';
+        const images = tempDiv.querySelectorAll('img');
+        const photoSection = document.getElementById('detail-photo-section');
+        const photoBox = document.querySelector('.detail-photo-box');
+
+        if (images.length > 0) {
+            photoBox.innerHTML = ''; 
+            images.forEach(img => {
+                img.style.height = '140px';
+                img.style.width = 'auto';
+                img.style.borderRadius = '12px';
+                img.style.objectFit = 'cover';
+                img.style.flexShrink = '0';
+                img.style.boxShadow = '0 4px 10px rgba(0,0,0,0.05)';
+                img.style.margin = '0';
+                photoBox.appendChild(img);
+            });
+            photoSection.style.display = 'block';
+        } else {
+            photoSection.style.display = 'none';
+        }
+
+        const diaryBox = document.querySelector('.detail-diary-box');
+        if (diaryBox) {
+            diaryBox.innerHTML = `
+                <div style="font-size: 12px; color: var(--primary-orange); font-weight: 700; margin-bottom: 8px;">
+                    ${new Date(diary.createdAt).toLocaleDateString('ko-KR')}
+                </div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-dark); margin-bottom: 12px;">
+                    ${diary.title || '제목 없는 일기'}
+                </div>
+                <div style="font-size: 15px; line-height: 1.6; color: var(--text-dark);">
+                    ${tempDiv.innerHTML}
+                </div>
+            `;
+        }
+
+        const conversationSection = document.getElementById('detail-conversation-section');
+        const conversationBox = document.getElementById('detail-conversation-box');
+        
+        if (conversationSection && conversationBox) {
+            if (diary.inputType === 'CHAT' || diary.inputType === 'CALL') {
+                conversationSection.style.display = 'block'; 
+                conversationBox.innerHTML = `<div style="text-align:center; color:#999; font-size:13px; padding: 20px 0;">대화 내역을 불러오는 중...</div>`;
+
+                let historyApiUrl = diary.inputType === 'CHAT' 
+                    ? `/chat-rooms/${diary.inputId}` 
+                    : `/call-rooms/${diary.inputId}`;
+
+                try {
+                    const historyRes = await apiFetch(historyApiUrl);
                     
-                    photoBox.appendChild(img);
-                });
-                photoSection.style.display = 'block';
-            } else {
-                photoSection.style.display = 'none';
-            }
+                    if (historyRes.success && historyRes.data) {
+                        conversationBox.innerHTML = ''; 
+                        
+                        const messages = historyRes.data.chatMessages || historyRes.data.callMessages || historyRes.data.messages || historyRes.data;
+                        
+                        if (messages && messages.length > 0) {
+                            messages.forEach(msg => {
+                                let text = msg.textContent || msg.content || msg.message || msg.text || '';
+                                
+                                let isMe = msg.sender === 'USER' || msg.role === 'USER';
+                                if (text.toUpperCase().startsWith('USER:')) isMe = true;
 
-            document.querySelector('.detail-diary-box').innerHTML = tempDiv.innerHTML;
-            window.currentViewingDiaryId = diaryId;
+                                if (text.includes('ai_answer')) {
+                                    try {
+                                        const parsed = JSON.parse(text.substring(text.indexOf('{')));
+                                        text = parsed.ai_answer || text;
+                                    } catch(e) {}
+                                }
+                                text = text.replace(/^USER:\s*/i, '').replace(/^AI:\s*/i, '');
+
+                                const bubbleClass = isMe ? 'bubble-user' : 'bubble-ai';
+                                
+                                conversationBox.innerHTML += `
+                                    <div class="chat-bubble ${bubbleClass}" style="max-width: 85%; ${isMe ? 'align-self: flex-end; background: var(--primary-orange); color: white;' : 'align-self: flex-start; background: #EFEFEF; color: black;'} padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4;">
+                                        ${text}
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            conversationBox.innerHTML = `<div style="text-align:center; color:#999; font-size:13px; padding: 20px 0;">저장된 대화 내역이 없습니다.</div>`;
+                        }
+                    } else {
+                         conversationBox.innerHTML = `<div style="text-align:center; color:red; font-size:13px; padding: 20px 0;">대화 내역을 불러오는데 실패했습니다.</div>`;
+                    }
+                } catch (err) {
+                    conversationBox.innerHTML = `<div style="text-align:center; color:red; font-size:13px; padding: 20px 0;">통신 에러가 발생했습니다.</div>`;
+                }
+            } else {
+                conversationSection.style.display = 'none';
+            }
         }
     } catch (error) {
+        console.error(error);
         alert("상세 내용을 불러오지 못했습니다.");
     }
 }
-
 async function finishDiary() {
     const titleInput = document.getElementById('diary-title-input');
     const contentInput = document.getElementById('diary-input');
