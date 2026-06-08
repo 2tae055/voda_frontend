@@ -240,23 +240,44 @@ function enterMainApp() {
 
 // ── 카카오 로그인 ──────────────────────────────────────────
 
-function handleLogin() {
-    const redirectUri = KAKAO_REDIRECT_URI;
+let KAKAO_REST_API_KEY = '';
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch('/api/config');
+        const data = await response.json();
+        
+        if (data.kakaoRestApiKey) {
+            KAKAO_REST_API_KEY = data.kakaoRestApiKey;
+            console.log("카카오 REST API 키 세팅 완료");
+        }
+    } catch (error) {
+        console.error("카카오 키를 불러오는데 실패했습니다:", error);
+    }
+});
+
+function handleLogin(buttonElement) {
+    if (!KAKAO_REST_API_KEY) {
+        alert("카카오 로그인 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+        return;
+    }
+    
+    const redirectUri = `${window.location.origin}${window.location.pathname}`;
+    
     const kakaoAuthUrl =
         `https://kauth.kakao.com/oauth/authorize` +
         `?client_id=${KAKAO_REST_API_KEY}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&response_type=code`;
+        
     location.href = kakaoAuthUrl;
 }
 
-// 페이지 로드 시 URL에 code 파라미터가 있으면 콜백 처리
 async function handleKakaoCallback() {
     const params = new URLSearchParams(location.search);
     const code = params.get('code');
-    if (!code) return;
+    if (!code) return; 
 
-    // URL에서 code 제거 (뒤로가기 시 재처리 방지)
     history.replaceState(null, '', location.pathname);
 
     try {
@@ -270,11 +291,9 @@ async function handleKakaoCallback() {
         }
 
         if (data.data.needsSignup) {
-            // 신규 회원 → 추가 정보 입력 화면
             sessionStorage.setItem('kakaoSessionToken', data.data.sessionToken);
             openKakaoSignupScreen();
         } else {
-            // 기존 회원 → 바로 로그인
             localStorage.setItem('accessToken', data.data.accessToken);
             if (data.data.refreshToken) {
                 localStorage.setItem('refreshToken', data.data.refreshToken);
@@ -287,7 +306,7 @@ async function handleKakaoCallback() {
         }
     } catch (error) {
         console.error(error);
-        alert(error.message);
+        alert("카카오 로그인 중 오류가 발생했습니다: " + error.message);
     }
 }
 
