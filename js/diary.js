@@ -189,20 +189,23 @@ async function fetchDiaryDetail(diaryId) {
             photoSection.style.display = 'none';
         }
 
-        const diaryBox = document.querySelector('.detail-diary-box');
-        if (diaryBox) {
-            diaryBox.innerHTML = `
-                <div style="font-size: 12px; color: var(--primary-orange); font-weight: 700; margin-bottom: 8px;">
-                    ${new Date(diary.createdAt).toLocaleDateString('ko-KR')}
-                </div>
-                <div style="font-size: 18px; font-weight: 700; color: var(--text-dark); margin-bottom: 12px;">
-                    ${diary.title || '제목 없는 일기'}
-                </div>
-                <div style="font-size: 15px; line-height: 1.6; color: var(--text-dark);">
-                    ${tempDiv.innerHTML}
-                </div>
-            `;
-        }
+       
+const diaryBox = document.querySelector('.detail-diary-box');
+if (diaryBox) {
+    diaryBox.innerHTML = `
+        <div style="font-size: 12px; color: var(--primary-orange); font-weight: 700; margin-bottom: 12px;">
+            ${new Date(diary.createdAt).toLocaleDateString('ko-KR')}
+        </div>
+
+        <div style="font-size: 18px; font-weight: 700; color: var(--text-dark); margin-bottom: 12px;">
+            ${diary.title || '제목 없는 일기'}
+        </div>
+
+        <div style="font-size: 15px; line-height: 1.6; color: var(--text-dark);">
+            ${tempDiv.innerHTML}
+        </div>
+    `;
+}
 
         const conversationSection = document.getElementById('detail-conversation-section');
         const conversationBox = document.getElementById('detail-conversation-box');
@@ -222,7 +225,7 @@ async function fetchDiaryDetail(diaryId) {
                     if (historyRes.success && historyRes.data) {
                         conversationBox.innerHTML = ''; 
                         
-                        const messages = historyRes.data.chatMessages || historyRes.data.callMessages || historyRes.data.messages || historyRes.data;
+                        const messages = historyRes.data.chatMessages || historyRes.data.callMessages || historyRes.data.callTexts || historyRes.data.messages || historyRes.data;
                         
                         if (messages && messages.length > 0) {
                             messages.forEach(msg => {
@@ -737,6 +740,8 @@ async function loadAndShowChatDiary(roomId) {
     }
 }
 
+window.deleteDiary = deleteDiary;
+window.openEditView = openEditView;
 window.loadAndShowChatDiary = loadAndShowChatDiary;
 window.predictDiary = predictDiary;
 window.voicePredictDiary = voicePredictDiary;
