@@ -253,11 +253,17 @@
                         <div style="padding: 20px; display:flex; flex-direction:column; gap:30px;">
                             <div>
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                    <div class="detail-section-title" style="margin-bottom: 0;">나의 일기</div>
-                                    <button onclick="openEditView()" style="background:none; border:none; color:var(--primary-orange); cursor:pointer; font-weight:700; font-size:13px; font-family:'Pretendard'; display:flex; align-items:center; gap:4px; padding:0;">
-                                        <span class="material-symbols-rounded" style="font-size:16px;">edit</span> 수정
-                                    </button>
-                                </div>
+    <div class="detail-section-title" style="margin-bottom: 0;">나의 일기</div>
+    
+    <div style="display: flex; gap: 14px; align-items: center;">
+        <button onclick="openEditView()" style="background:none; border:none; color:var(--primary-orange); cursor:pointer; font-weight:700; font-size:13px; font-family:'Pretendard'; display:flex; align-items:center; gap:4px; padding:0;">
+            <span class="material-symbols-rounded" style="font-size:16px;">edit</span> 수정
+        </button>
+        <button onclick="deleteDiary(window.currentViewingDiaryId)" style="background:none; border:none; color:#ff4d4f; cursor:pointer; font-weight:700; font-size:13px; font-family:'Pretendard'; display:flex; align-items:center; gap:4px; padding:0;">
+            <span class="material-symbols-rounded" style="font-size:16px;">delete</span> 삭제
+        </button>
+    </div>
+</div>
                                 <div class="detail-diary-box"></div>
                             </div>
                             
