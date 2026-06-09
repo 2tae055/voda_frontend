@@ -68,21 +68,37 @@ function openInDiaryTab(viewType) {
 }
 
 function triggerEndSessionFlow(type) {
-    showConfirmModal("기록을 마칠까요?", () => {
+    showConfirmModal("기록을 마칠까요?", async () => {
+        const roomId = window.currentCallRoomId;
+
         if (type === 'call') stopCall();
         if (type === 'mic') stopMicRecord();
 
-        showLoadingModal(
-            "⏳ 기록을 저장합니다...<br>잠시만 기다려주세요.",
-            1500,
-            () => {
-                showSuccessModal(
-                    "✨ 기록을 성공적으로 저장했습니다!",
-                    800,
-                    () => { openInRecordTab('default'); }
-                );
+        showLoadingModal("⏳ 기록을 저장합니다...<br>잠시만 기다려주세요.");
+
+        try {
+            if (type === 'call' && roomId) {
+                if (window.callTextCount === 0) {
+                    closeCustomModal();
+                    alert("녹음된 음성이 없습니다. 통화 중 말씀해 주세요.");
+                    openInRecordTab('default');
+                    return;
+                }
+                await apiFetch('/diaries/conversation', {
+                    method: 'POST',
+                    body: JSON.stringify({ conversationType: 'call', roomId })
+                });
             }
-        );
+            closeCustomModal();
+            showSuccessModal(
+                "✨ 기록을 성공적으로 저장했습니다!",
+                800,
+                () => { openInRecordTab('default'); }
+            );
+        } catch (e) {
+            closeCustomModal();
+            alert("일기 저장에 실패했습니다. 다시 시도해 주세요.");
+        }
     });
 }
 
