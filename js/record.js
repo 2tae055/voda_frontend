@@ -257,27 +257,64 @@ function appendCallMessage(text, sender) {
     container.scrollTop = container.scrollHeight;
 }
 
-let currentUtterance = null; 
+let currentAudio = null; 
 
-function speakText(text, callback) {
+async function speakText(text, callback) {
+    window.speechSynthesis.cancel();
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+    }
+
+    try {
+        const response = await fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.audioContent) {
+            throw new Error("TTS 변환 실패");
+        }
+
+        const audioSrc = 'data:audio/mp3;base64,' + data.audioContent;
+        currentAudio = new Audio(audioSrc);
+
+        currentAudio.onended = () => {
+            if (callback) callback();
+            
+            if (isCalling && callRecognition) {
+                document.getElementById('call-mic-text').innerText = "듣고 있어요...";
+                try {
+                    callRecognition.start();
+                } catch(e) {}
+            }
+        };
+
+        currentAudio.play();
+
+    } catch (error) {
+        console.error("구글 TTS 에러, 기본 목소리로 대체합니다:", error);
+        fallbackSpeakText(text, callback); 
+    }
+}
+
+function fallbackSpeakText(text, callback) {
     window.speechSynthesis.cancel(); 
-
-    currentUtterance = new SpeechSynthesisUtterance(text);
-    currentUtterance.lang = 'ko-KR';
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ko-KR';
     
-    currentUtterance.onend = () => {
+    utterance.onend = () => {
         if (callback) callback();
         if (isCalling && callRecognition) {
             document.getElementById('call-mic-text').innerText = "듣고 있어요...";
-            try {
-                callRecognition.start();
-            } catch(e) {}
+            try { callRecognition.start(); } catch(e) {}
         }
     };
     
-    setTimeout(() => {
-        window.speechSynthesis.speak(currentUtterance);
-    }, 100);
+    setTimeout(() => { window.speechSynthesis.speak(utterance); }, 100);
 }
 
 window.appendCallMessage = appendCallMessage;
