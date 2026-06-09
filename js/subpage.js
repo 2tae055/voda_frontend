@@ -28,149 +28,30 @@ const subPageData = {
     },
 
     addTodo: {
-    title: '새 할 일 추가',
-    content: `
-        <div style="width:100%; display:flex; flex-direction:column; gap:24px; text-align:left; padding: 24px; box-sizing: border-box;">
+        title: '새 할 일 추가',
+        content: `
+            <div style="width:100%; display:flex; flex-direction:column; gap:24px; text-align:left; padding: 24px; box-sizing: border-box;">
 
-            <div>
-                <div style="font-size:14px; color:var(--text-gray); font-weight:600; margin-bottom:12px;">
-                    루틴 설정
+                <div>
+                    <div style="font-size:14px; color:var(--text-gray); font-weight:600; margin-bottom:12px;">
+                        할 일 내용
+                    </div>
+                    <input type="text" id="new-todo-input" class="search-input-box" placeholder="무엇을 해야 하나요?" style="background:#FAFAFA;">
                 </div>
 
-                <div style="display:flex; gap:10px;">
+                <div>
+                    <div style="font-size:14px; color:var(--text-gray); font-weight:600; margin-bottom:12px;">
+                        언제까지 해야 하나요?
+                    </div>
+                    <input type="datetime-local" id="todo-due-date" class="todo-date-input" style="width:100%;">
+                </div>
 
-                    <label style="flex:1;">
-                        <input
-                            type="radio"
-                            name="todoRoutine"
-                            value="daily"
-                            checked
-                            onchange="window.toggleTodoTime('daily')"
-                            style="display:none;"
-                        >
-
-                        <div class="routine-btn daily-btn">
-                            매일
-                        </div>
-                    </label>
-
-                    <label style="flex:1;">
-                        <input
-                            type="radio"
-                            name="todoRoutine"
-                            value="weekly"
-                            onchange="window.toggleTodoTime('weekly')"
-                            style="display:none;"
-                        >
-
-                        <div class="routine-btn weekly-btn">
-                            매주
-                        </div>
-                    </label>
-
-                    <label style="flex:1;">
-                        <input
-                            type="radio"
-                            name="todoRoutine"
-                            value="monthly"
-                            onchange="window.toggleTodoTime('monthly')"
-                            style="display:none;"
-                        >
-
-                        <div class="routine-btn monthly-btn">
-                            매월
-                        </div>
-                    </label>
-
+                <div style="margin-top: 20px;">
+                    <button class="login-btn" style="background:var(--text-dark); color:white;" onclick="addNewTodo()">추가하기</button>
                 </div>
             </div>
-
-            <div>
-
-                <div style="font-size:14px; color:var(--text-gray); font-weight:600; margin-bottom:12px;">
-                    기한 설정
-                </div>
-
-                <div id="todo-time-daily"
-                     style="display:flex; gap:10px; align-items:center;">
-
-                    <span style="font-size:14px; font-weight:600; color:var(--text-gray);">
-                        시간 제한 없음
-                    </span>
-
-                </div>
-
-                <div id="todo-time-weekly"
-                     style="display:none; gap:10px; align-items:center;">
-
-                    <select id="todo-week-val"
-                            class="todo-date-input"
-                            style="flex:1;">
-
-                        <option value="월요일">월요일</option>
-                        <option value="화요일">화요일</option>
-                        <option value="수요일">수요일</option>
-                        <option value="목요일">목요일</option>
-                        <option value="금요일">금요일</option>
-                        <option value="토요일">토요일</option>
-                        <option value="일요일">일요일</option>
-
-                    </select>
-
-                    <span style="font-size:14px; font-weight:600; color:var(--text-dark);">
-                        까지
-                    </span>
-
-                </div>
-
-                <div id="todo-time-monthly"
-                     style="display:none; gap:10px; align-items:center;">
-
-                    <input
-                        type="number"
-                        id="todo-month-val"
-                        class="todo-date-input"
-                        min="1"
-                        max="31"
-                        placeholder="몇 일?"
-                        style="flex:1;"
-                    >
-
-                    <span style="font-size:14px; font-weight:600; color:var(--text-dark);">
-                        일까지
-                    </span>
-
-                </div>
-
-            </div>
-
-            <div>
-
-                <div style="font-size:14px; color:var(--text-gray); font-weight:600; margin-bottom:12px;">
-                    할 일 내용
-                </div>
-
-                <input
-                    type="text"
-                    id="new-todo-input"
-                    placeholder="어떤 일을 해야 하나요?"
-                    class="todo-date-input"
-                    style="background-color:white;"
-                >
-
-            </div>
-
-            <button
-                onclick="addNewTodo()"
-                style="background:var(--primary-orange); color:white; border:none; padding:16px; border-radius:14px; font-size:16px; font-weight:700; cursor:pointer; font-family:'Pretendard'; margin-top:10px; box-shadow: 0 4px 10px rgba(242,140,40,0.2);"
-            >
-                추가하기
-            </button>
-
-        </div>
-    `
-},
-
+        `
+    },
 
     report: {
         title: '나의 레포트',
@@ -195,7 +76,20 @@ const subPageData = {
 
     settings: {
         title: '앱 설정',
-        content: `<div>설정</div>`
+        content: `
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                <div style="padding: 16px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+                    <div style="font-size: 13px; color: var(--text-gray); margin-bottom: 4px;">현재 버전</div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-dark);">v 1.0.0</div>
+                </div>
+
+                <!-- 로그아웃 버튼 -->
+                <button onclick="handleLogout()" style="margin-top: 20px; padding: 16px; background: white; border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                    <span class="material-symbols-rounded">logout</span>
+                    로그아웃
+                </button>
+            </div>
+        `
     }
 };
 
