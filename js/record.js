@@ -5,6 +5,8 @@ let isMicRecording = false;
 let isCalling = false;
 let callTimerInterval;
 let callSeconds = 0;
+window.window.currentCallRoomId = null;
+window.callTextCount = 0;
 
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
@@ -79,19 +81,28 @@ function stopMicRecord() {
     }
 }
 
-function startCall() {
+async function startCall() {
     if (isCalling) return;
     if (!SpeechRecognition) {
         alert("음성 인식을 지원하지 않는 브라우저입니다.");
         return;
     }
 
+    try {
+        const res = await apiFetch('/call-rooms', { method: 'POST' });
+        window.window.currentCallRoomId = res.data.callRoomId;
+    } catch (e) {
+        alert("통화 방 생성에 실패했습니다.");
+        return;
+    }
+
     isCalling = true;
     callSeconds = 0;
-    
+    window.callTextCount = 0;
+
     document.getElementById('call-timer').innerText = '00:00';
     document.getElementById('call-messages').innerHTML = '<div class="chat-bubble bubble-ai">안녕하세요! 오늘 하루는 어떠셨나요? 😊</div>';
-    
+
     callTimerInterval = setInterval(() => {
         callSeconds++;
         const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
@@ -101,12 +112,23 @@ function startCall() {
 
     callRecognition = new SpeechRecognition();
     callRecognition.lang = 'ko-KR';
-    
-    callRecognition.onresult = (event) => {
+
+    callRecognition.onresult = async (event) => {
         const transcript = event.results[0][0].transcript;
         appendCallMessage(transcript, "user");
-        
-        // AI 응답 시뮬레이션 (백엔드 연결 전)
+
+        if (window.currentCallRoomId) {
+            try {
+                await apiFetch(`/call-rooms/${window.currentCallRoomId}/texts`, {
+                    method: 'POST',
+                    body: JSON.stringify({ textContent: transcript })
+                });
+                window.callTextCount++;
+            } catch (e) {
+                console.error("텍스트 저장 실패:", e);
+            }
+        }
+
         document.getElementById('call-mic-text').innerText = "AI가 생각 중...";
         setTimeout(() => {
             if (!isCalling) return;
