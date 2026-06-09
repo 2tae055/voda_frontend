@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 일기장 보다</title>
@@ -109,11 +113,8 @@
                 
                 <div class="tab-page">
                     <header>
-                        <div class="logo">보다</div>
-                        <div class="bell-wrapper" onclick="openSubPage('notifications')">
-                            <span class="material-symbols-rounded bell-icon">notifications</span>
-                            <span class="badge-dot" id="noti-badge"></span>
-                        </div>
+                        <div class="logo">기록</div>
+
                     </header>
                     
                     <div id="default-record-view">
@@ -133,7 +134,7 @@
                         <div class="swiper mySwiper">
                             <div class="swiper-wrapper">
                                 <div class="swiper-slide"><button class="btn btn-call" onclick="openInRecordTab('call')"><span class="material-symbols-rounded">call</span></button></div>
-                                <div class="swiper-slide"><button class="btn btn-chat" onclick="openInRecordTab('chat')"><span class="material-symbols-rounded">chat_bubble</span></button></div>
+                                <div class="swiper-slide"><button class="btn btn-chat" onclick="startChatDiary()"><span class="material-symbols-rounded">chat_bubble</span></button></div>
                                 <div class="swiper-slide"><button class="btn btn-mic" onclick="openInRecordTab('mic')"><span class="material-symbols-rounded">mic</span></button></div>
                                 <div class="swiper-slide"><button class="btn btn-auto" onclick="triggerAutoDiary()"><span class="material-symbols-rounded">auto_awesome</span></button></div>
                                 <div class="swiper-slide"><button class="btn btn-edit" onclick="openInRecordTab('diary')"><span class="material-symbols-rounded">edit</span></button></div>
@@ -156,7 +157,7 @@
                     <div id="mic-record-view" class="record-view-container">
                         <div class="top-action-header">
                             <div class="top-action-title"><span class="material-symbols-rounded" style="color:var(--primary-orange); font-size: 20px;">mic</span>음성 일기 기록 중</div>
-                            <button class="btn-finish-action" onclick="triggerEndSessionFlow('mic')">기록 끝내기</button>
+                            <button class="btn-finish-action" onclick="stopMicRecord()">종료</button>
                         </div>
                         <div id="mic-messages" class="messages-area">
                             <div class="chat-bubble bubble-ai">오늘 하루 어떤 일이 있었나요? 편하게 말씀해주세요. 🎙️</div>
@@ -170,7 +171,7 @@
                     <div id="chat-record-view" class="record-view-container">
                         <div class="top-action-header">
                             <div class="top-action-title"><span class="material-symbols-rounded" style="color:var(--primary-orange); font-size: 20px;">chat_bubble</span>AI 대화 기록 중</div>
-                            <button class="btn-finish-action" onclick="triggerEndSessionFlow('chat')">종료</button>
+                            <button class="btn-finish-action" onclick="endChatDiary()">종료</button>
                         </div>
                         <div id="chat-messages" class="messages-area">
                             <div class="chat-bubble bubble-ai">안녕하세요! 무엇이든 편하게 이야기해주세요. 오늘 하루는 어땠나요? 😊</div>
@@ -203,7 +204,6 @@
                     <div id="diary-main-view" style="display:flex; flex-direction:column; flex:1;">
                         <header>
                             <div class="logo">다이어리</div>
-                            <span class="material-symbols-rounded bell-icon" onclick="openInDiaryTab('search')">search</span>
                         </header>
                         <div class="calendar-container">
                             <div class="calendar-header">
@@ -266,13 +266,10 @@
                                 <div class="detail-photo-box" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;"></div>
                             </div>
 
-                            <div>
-                                <div class="detail-section-title">AI와의 대화 내역</div>
-                                <div class="detail-chat-box">
-                                    <div style="text-align:center; color:var(--text-gray); font-size:14px; padding:30px 0; font-weight:500;">
-                                        AI와의 대화 내역이 없습니다.
+                            <div id="detail-conversation-section" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                                <div class="detail-section-title" style="margin-bottom: 15px;">나의 대화 기록</div>
+                                <div id="detail-conversation-box" style="display: flex; flex-direction: column; gap: 12px; background: #FAFAFA; padding: 16px; border-radius: 12px; max-height: 400px; overflow-y: auto;">
                                     </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -375,6 +372,7 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script src="js/config.js"></script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 <script src="js/api.js"></script>
 
 <script src="js/modal.js"></script>
